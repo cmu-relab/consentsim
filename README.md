@@ -4,7 +4,7 @@ Policy evolution with consent simulation
 ## Simulation Design
 
 **Research Questions:**
-* ?
+* Given a population response to a model change, how does policy scope and retroactivity affect participation?
 
 ### Operations
 1. User: Consent to, Withdraw consent
