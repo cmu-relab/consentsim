@@ -1,7 +1,8 @@
 #Simulation plan
+class Simulation:
 
-#init method to set up the simulation - store necessary variables, read in contingency table, create owl generator
-Init(contingency table, number of users to initialize to, number of runs, type(s) of policy changes, magnitude(s) of policy changes):
+	#init method to set up the simulation - store necessary variables, read in contingency table, create owl generator
+	def __init__(contingency table, number of users to initialize to, number of runs, type(s) of policy changes, magnitude(s) of policy changes):
 	#Create OWLGenerator
 	#Read in contingency table (maybe want a separate method for that)
 	#store population numbers in separate table, calculated off of contingency table
@@ -14,35 +15,35 @@ Init(contingency table, number of users to initialize to, number of runs, type(s
 	#Create ontology and add data types
 	#stor var for num users created, so no overlaps? Or could update OWLGenerator
 
-#creates the user data in the ontology; could be called in init, could be used in main to add new users to sim as it iterates
-GenUserData(self - tables would already be stored, maybe pass in how many users to be added?):
+	#creates the user data in the ontology; could be called in init, could be used in main to add new users to sim as it iterates
+	def genUserData(self - tables would already be stored, maybe pass in how many users to be added?):
 	#Use OWLGenerator to create the user data in ontology
 	#Create new users based on contingency table
 	#would want to create consents for new users?
 
-userConsent(self, maybe pass in the number of users/new consents that need to be created):
+	def userConsent(self, maybe pass in the number of users/new consents that need to be created):
 	# Use OWLGenerator to create consents for the users
 	# single user or iterate through multiple users. Depends on where in the program user consents will be created
 	# User names standardized - U#, so can easily iterate through users when necessary
 
-CollectUserData(self):
+	def collectUserData(self):
 	#use OWLGenerator to create data collection events for all users
 	#I do not think it would matter about specific users
 
-# use OWlGenerator to create data access events for users with appropriate consent
-accessUserData(self):
+	# use OWlGenerator to create data access events for users with appropriate consent
+	def accessUserData(self):
 	# check each user/ which users do not have consent conflicts for said time interval
 	# Call checkConsent maybe
 	# create data access for all appropriate users - maybe iterate through the list of users
 
-#checks if user has consent. Can either be here or in OWLGenerator. Might want to put in OWLGenerator, so it is more flexable
-checkConsent(self, maybe U, D, R to check for a specific consent, T depending on if is part of simulation.py or OWlGenerator):
+	#checks if user has consent. Can either be here or in OWLGenerator. Might want to put in OWLGenerator, so it is more flexable
+	def checkConsent(self, maybe U, D, R to check for a specific consent, T depending on if is part of simulation.py or OWlGenerator):
 	# Checks the user/data/time/recipient combination to be accessed has consent to be accessed. Might be tough to implement
 	# Either pass in user or iterate through all the users, data types and recipients. Depends on how we use this I think
 
-# actually creates the policy change event
-#change the number of users and the demographics of the users 
-PolicyChange(pass in the type of policy change, or maybe have that passed in in the init. How complex do we want to get with the policy changes in a single simulation?):
+	# actually creates the policy change event
+	#change the number of users and the demographics of the users 
+	def policyChange(pass in the type of policy change, or maybe have that passed in in the init. How complex do we want to get with the policy changes in a single simulation?):
 	# This would have to understand how the users change – how many users stop using, how many withdraw consent, and how this would affect the demographics
 	# Perhaps have a new contingency table of how policy change affects the user demographics. multiply against previous user numbers table to get new demographics numbers, or could have a table that is multiplied directly with the number of users.
 	# Store new table of users
@@ -56,17 +57,17 @@ PolicyChange(pass in the type of policy change, or maybe have that passed in in 
 	#use table multiplied against current user numbers to determine number of users quitting
 	#after number of users leaving determined, use OWLGenerator to delete the users
 
-#calculates the statistics of the policy changes
-calcStats(self):
-	Store the differences in each variation of the contingency tables.
-	Have a stats method called at end of program, can calculate the types of changes between each table after policy changes
-	Or could do calculations after each policy change, store them. Would need to store less contingency tables, depends on the stats we would want
+	#calculates the statistics of the policy changes
+	def calcStats(self):
+	# Store the differences in each variation of the contingency tables.
+	# Have a stats method called at end of program, can calculate the types of changes between each table after policy changes
+	# Or could do calculations after each policy change, store them. Would need to store less contingency tables, depends on the stats we would want
 
 	# store the change type, magnitude, number of users and their demographics who dropped
 	# total number of users dropped
 
-# A main method that would iterate through time intervals, update the ontology and user data, and simulate policy change.
-main(self):
+	# A main method that would iterate through time intervals, update the ontology and user data, and simulate policy change.
+	def main(self):
 	# create the initial ontology with data types, recipients, initial users, T0. This sets everything up
 	# A loop to iterate given number of times for simulation, Inside loop:
 		# Each iteration in this loop would be a time interval, would start at T0
