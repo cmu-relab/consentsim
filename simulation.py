@@ -1,100 +1,333 @@
-#Simulation plan
+'''
+7/9/20
+Simulation.py
+'''
+import OWLgenerator as ow
+import numpy as np
+import random
+import time
+
+
+
 class Simulation:
-
-	#init method to set up the simulation - store necessary variables, read in contingency table, create owl generator
-	def __init__(contingency table, number of users to initialize to, number of runs, type(s) of policy changes, magnitude(s) of policy changes):
-	#Create OWLGenerator
-	#Read in contingency table (maybe want a separate method for that)
-	#store population numbers in separate table, calculated off of contingency table
-		# Initially perhaps have table n x m, with different age ranges and income levels. Each cell would contain the proportion of users in that intersection of age and income
-		# Create a table of users with numbers calculated by initial number of users and the proportions in the table read in. numpy?
-		# If want to have multiple tables, store in data structure we can expand into multiple separate tables
-	#Num_users optionally input, stored
-	#Many of these are ultimately based on what we end up doing with the contingency table.
-	#Would need to store the time interval, initially at T0
-	#Create ontology and add data types
-	#stor var for num users created, so no overlaps? Or could update OWLGenerator
-
-	#creates the user data in the ontology; could be called in init, could be used in main to add new users to sim as it iterates
-	def genUserData(self - tables would already be stored, maybe pass in how many users to be added?):
-	#Use OWLGenerator to create the user data in ontology
-	#Create new users based on contingency table
-	#would want to create consents for new users?
-
-	def userConsent(self, maybe pass in the number of users/new consents that need to be created):
-	# Use OWLGenerator to create consents for the users
-	# single user or iterate through multiple users. Depends on where in the program user consents will be created
-	# User names standardized - U#, so can easily iterate through users when necessary
-
-	def collectUserData(self):
-	#use OWLGenerator to create data collection events for all users
-	#I do not think it would matter about specific users
-
-	# use OWlGenerator to create data access events for users with appropriate consent
-	def accessUserData(self):
-	# check each user/ which users do not have consent conflicts for said time interval
-	# Call checkConsent maybe
-	# create data access for all appropriate users - maybe iterate through the list of users
-
-	#checks if user has consent. Can either be here or in OWLGenerator. Might want to put in OWLGenerator, so it is more flexable
-	def checkConsent(self, maybe U, D, R to check for a specific consent, T depending on if is part of simulation.py or OWlGenerator):
-	# Checks the user/data/time/recipient combination to be accessed has consent to be accessed. Might be tough to implement
-	# Either pass in user or iterate through all the users, data types and recipients. Depends on how we use this I think
-
-	# actually creates the policy change event
-	#change the number of users and the demographics of the users 
-	def policyChange(pass in the type of policy change, or maybe have that passed in in the init. How complex do we want to get with the policy changes in a single simulation?):
-	# This would have to understand how the users change – how many users stop using, how many withdraw consent, and how this would affect the demographics
-	# Perhaps have a new contingency table of how policy change affects the user demographics. multiply against previous user numbers table to get new demographics numbers, or could have a table that is multiplied directly with the number of users.
-	# Store new table of users
-	# Would this delete users from the ontology? Probably create another method to handle the deletions and update the ontology accordingly
-	# How would we want to handle user consents/withdrawals with the users who leave?
-	# Maybe want to create withdrawals for certain users because of the policy change - could be based on the policy change type
 	
-	# Possible policy changes: collecting more info, different purpose, share with a broader group. How would we want to represent these different changes, should we be able to alter how severe the changes are (maybe pass in a multiplier for severity, a key for the type of policy change)
-	# Find the numbers we might want to use for each scenario?
-	#somewhere store the contingency tables for the differnent policy changes, pass in those and a multiplyer to determine magnitude of policy change and its effect
-	#use table multiplied against current user numbers to determine number of users quitting
-	#after number of users leaving determined, use OWLGenerator to delete the users
+	def __init__(self, userTable, simScript, owlIRI):
+		#contains which timestep program is in
+		self.timeStep = 0
 
-	#calculates the statistics of the policy changes
-	def calcStats(self):
-	# Store the differences in each variation of the contingency tables.
-	# Have a stats method called at end of program, can calculate the types of changes between each table after policy changes
-	# Or could do calculations after each policy change, store them. Would need to store less contingency tables, depends on the stats we would want
+		self.simOnto = ow.OWLgenerator(owlIRI)
 
-	# store the change type, magnitude, number of users and their demographics who dropped
-	# total number of users dropped
+		#parse contingency table demoCols/Rows are col/row lables
+		#users are the actual numbers of users data, userRrops are the calculated proportions users in each demographic category
+		self.demoCols, self.demoRows, self.users, self.userProps = self.parseTable(userTable)
 
-	# A main method that would iterate through time intervals, update the ontology and user data, and simulate policy change.
-	def main(self):
-	# create the initial ontology with data types, recipients, initial users, T0. This sets everything up
-	# A loop to iterate given number of times for simulation, Inside loop:
-		# Each iteration in this loop would be a time interval, would start at T0
-		# Call genUserData to add users that might join service
-		# Do we want to create consents for each new user? Call userConsent to create consents for the new users
-		# Call collectUser data to create dataCollection events for users in time step
-		# Call accessUserData to create dataAccess events to create dataAccess events for the users, data types, and recipients
-		# This would be where there may be issues with user consent - if they withdrew consent but data was accessed, the error should occur here? We probably would want to check in some capacity what violations might have occured
-		# If on iteration number x, would want to simulate a privacy policy change. Call PolicyChange to update how users react to the change
-		# Update time interval
-		# Maybe don’t need to store time interval, can base it off of iteration number, I guess it depends on how the other methods use the time interval and if we would rather pass the interval number in each call or just have the methods check the stored variable. I guess I would rather store it as an attribute
-	# After loop call the stats method to print simulation data to a csv file
+		self.currentUsers = self.users
+
+		self.totalUsersAdded = self.users.sum()
+
+		self.totalCollectionEvents = 0
+
+		#adds users to the ontology
+		for i in range(1, self.totalUsersAdded+1):
+			newU = "U" + str(i)
+			cName = newU + "initialConsent"
+			self.simOnto.createNewClass("User", newU)
+
+			self.simOnto.userConsent("D1", newU, "T0", "Recipient", cName)
+
+			#create the consent for user. For do Dtype 1, time 0, R1. now, I'm just going to 
+
+		#contains how often each data type is collected or accessed. Filled in parseScript
+		self.collectFreqs = {}
+		self.accessFreqs = {}
+
+		#contains the numbers of the data collection for the last dc event for each data type
+		#allows access to access the proper dataCollection log
+		self.dcNumRange = {}
+
+		#to track which users to withdraw consent, and how many to collect/access data from
+		self.numUsersWithdrawn = 0
+
+		self.initialPolicy = ("D1", "Recipient", "cr",)
+
+		#parse script
+		self.eventList = self.parseScript(simScript)
+
+		self.name = simScript[:-3] + "owl"
+
+	#parses the contingency table of the population into a numpy array
+	def parseTable(self, tableTxt):
+		#parse table here
+		#read in line by line, add to list, convert to numpy
+		#print to check table
+		file = open(tableTxt, "r")
+		tableList = None
+		for line in file:
+			splitLine = line.split("\t")
+			stripped = line.split()
+
+			if tableList == None:
+				tableList = []
+				stripped.insert(0, "demographics")
+				tableList.append(stripped)
+			else:
+				tableList.append(stripped)
+
+		table = np.array(tableList)
+		cols = table[0,1:]
+		rows = table[1:,0]
+		users = table[1:, 1:].astype(int)
+
+		props = users / users.sum()
+
+		file.close()
+
+		return cols, rows, users, props
+
+
+	#parses the script for the simulation into a useful data structure
+	def parseScript(self, simScriptTxt):
+		file = open(simScriptTxt, "r")
+		eventList = []
+
+		# print("\n\n\nremember to uncomment events\n\n\n")
+		for line in file:
+			typeSplit = line.split(":")
+
+			newEvent = None
+
+
+			#new time interval
+			if typeSplit[0].rstrip("\n") == "^":
+				newEvent = Event()
+				eventList.append(newEvent)
+				# print("New Time step!")
+
+			#policy change
+			elif typeSplit[0] == "+":
+				pcData = typeSplit[1].split(",")
+				newEvent = Event(eType=2, pcData=pcData[0], pcRecip=pcData[1], consent=pcData[2].rstrip("\n"))
+				eventList.append(newEvent)
+				# print("Policy Change of data type {0}, recipient {1}, and {2} type consent".format(pcData[0], pcData[1], pcData[2].rstrip("\n")))
+			
+			#add data or recipients
+			elif typeSplit[0] == "#":
+				newData = typeSplit[1].split(">")
+				newEvent = Event(eType=1, parent=newData[0], child=newData[1].rstrip("\n"))
+				eventList.append(newEvent)
+				# print("class {0} subsumes class {1} to be added".format(newData[0], newData[1].rstrip("\n")))
+			
+			else:
+				#how often data collected, accessed
+				# print(typeSplit)
+				freqs = typeSplit[1].split(",")
+				self.collectFreqs[typeSplit[0]] = float(freqs[0])
+				self.accessFreqs[typeSplit[0]] = float(freqs[1].rstrip("\n"))
+				# print("{0} class collect freq of {1} and access freq of {2}".format(typeSplit[0], freqs[0], freqs[1].rstrip("\n")))
+
+		# print("\nCollect Freqs: ", self.collectFreqs)
+		# print("accessFreqs: ", self.accessFreqs)
+
+		# for e in eventList:
+		# 	print("\ntype: ", e.getType())
+		# 	print("arguments: ", e.getArgs())
+
+		return eventList
+
+	#creates a new timestep
+	def nextTimeStep(self):
+		prevTime = "T" + str(self.timeStep)
+		self.timeStep += 1
+		newTime = "T" + str(self.timeStep)
+
+		self.simOnto.createNewClass(prevTime, newTime)
+		return
+
+	#adds a class to ontology: data type or recipient
+	#dont need this method
+	def addClass(self, parent, child):
+		c = self.simOnto.createNewClass(parent, child)
+		return c
+
+	#creates a policy change
+	def createPolicyChange(self, pcData, pcRecip, consent):
+		print("Policy Change Occured")
+
+		#store new pc
+		newPolicy = (pcData, pcRecip, consent,)
+		print("the new data type is subsumed by: ", self.simOnto.getClass(pcData).is_a)
+
+	#collects specified datatypes from users
+	def collectData(self, dtype):
+		print("data was collected for ", dtype)
+		#loop through users, call owlgen on them
+		startRange = self.totalCollectionEvents + 1
+		for i in range(self.totalUsersAdded - self.numUsersWithdrawn):
+			#the this is set up it assumes that the users leaving are the oldest ones. (The consents created at T0 vs those leaving)
+			#sets up which number user is collected
+			num = i + self.numUsersWithdrawn + 1
+
+			u = "U" + str(num)
+			time = "T" + str(self.timeStep)
+
+			# print("User: ", u, "time: ", time)
+
+			#assumes data collected for all recipients
+			self.simOnto.logDataCollection(dtype, u, time, "Recipient")
+
+			self.totalCollectionEvents += 1
+
+		return range(startRange, self.totalCollectionEvents + 1)
+
+	#create access log events for users it can access data from
+	def accessData(self, dtype, dcRange):
+		print("data was accessed for data ", dtype)
+		#find out which users it does NOT violate consents to access
+		#create a data access log with OWLGEN for the indicated users
+
+		#will need to get more specific with this part later
+		time = "T" + str(self.timeStep)
+
+		for i in dcRange:
+			# dcNumber = self.totalCollectionEvents - i
+			dc = 'dataCollection{0}'.format(i) #dcNumber
+
+
+			#assumes data collected for all recipients
+			self.simOnto.logDataAccess(dc, time, "Recipient")
+
+		return
+
+	'''adds a randomly generated (add perams later to be more specific) number of users to the simulation
+	for now I have hardcoded the number of users to add, In the future I would like to add as a parameter
+
+
+	MIGHT NEED TO ADJUST HANDLING FOR STATS CALC'''
+	def addUsersInSim(self):
+		#generates the number of users added
+		minAdded = 5
+		maxAdded = 15
+		if self.users.sum() > 99:
+			maxAdded = self.users.sum() // 6
+		numAdded = random.randint(minAdded, maxAdded)
+		# print("\nnum users added: ", numAdded)
+
+		#calculates new user demographics
+		newUserDemos = self.userProps * numAdded
+
+		newUserDemos = newUserDemos.astype(int)
+		#recalculates number of users added to account for rounding
+		numAdded = newUserDemos.sum()
+		print(numAdded, " users added")
+
+		#adds the new users to the simulation
+		for i in range(numAdded):
+			userName = "U" + str(self.totalUsersAdded + i + 1)
+			# print("userName: ", userName)
+			self.simOnto.createNewClass("User", userName)
+
+			#creates the initial consent as the user is added
+			timeAdded = "T" + str(self.timeStep)
+			cName = userName + "initialConsent"
+			self.simOnto.userConsent("D1", userName, timeAdded, "R1", cName)
+
+		self.totalUsersAdded += numAdded
+		self.currentUsers = self.currentUsers + newUserDemos
+		# print("done adding users\n")
+
+		return
 
 
 
-	
+
+
+	def runSimulation(self):
+		for e in self.eventList:
+			#e.get args returns [parent, child, pcData, pcRecip, consent]
+			eType = e.getType()
+
+			if eType == 0:
+				#next time interval
+				#better to just increment, throw out method?
+				self.nextTimeStep()
+				self.addUsersInSim()
+
+				#as timestep increases, randomly check if data is collected or accessed:
+				#if accessed, call the data access collect methods, which collect and access data for recipients
+				#in dataAccess? check for violations
+				prob = random.random()
+				# print("probability: ", prob)
+				# print("dc dict: ", self.collectFreqs)
+
+				for data, freq in self.collectFreqs.items():
+					# print("data tested: ", data)
+					# print("freq of dC: ", freq)
+					if freq > prob:
+						# print("data collected")
+						# print("data collecting now: ", data)
+						self.dcNumRange[data] = self.collectData(data)
+				print("dict for numbers: ", self.dcNumRange)
+				
+				for data, freq in self.accessFreqs.items():
+					# print("freq of dA: ", freq)
+					if data in self.dcNumRange:
+						if freq > prob:
+							# print("data accessed")
+							self.accessData(data, self.dcNumRange[data])
+
+
+			elif eType == 1:
+				#add class (data or recipient)
+				args = e.getArgs()
+				self.simOnto.createNewClass(args[0], args[1])
+
+				#or could call:
+				# self.addClass(args[0], args[1])
+			elif eType == 2:
+				args = e.getArgs()
+				self.createPolicyChange(args[2], args[3], args[4])
+
+
+		self.simOnto.save(self.name)
 
 
 
-#questions I thought of
-#for the users that are added durring sim - do we want to imediatly create consents for them?
-#do we keep or delete the data collection events for users who stopped using?
-#should dataCollection events be created for each time interval?
-#would the policy change delete users from the table
-#do we want to keep or delete the data collections, accesses, consents, and withdrawals of the users who leave?
+#class that takes the data read from the script and calls the correct event method.
+#should event have the meat of what happens with each event, or should simulation? it feels like it should go in sim, but would be eaiser to go in event
+#could call return type, indecating what type of Sim method to call, and then return the needed data
+class Event:
+	def __init__(self, eType=0, parent=None, child=None, pcData=None, pcRecip=None, consent=None):
+		#0 for next time interval, 1 for adding data or recipients, 2 a policy change
+		self.eType = eType
 
-#Changes I would want to make to OWLGenerator:
-	#add meathods to separately add and remove specific users to/from onotology
-	#check if there are consent/withdrawal conflicts for certian U,D,T,R accesses
-	#check for any privacy violations that have occured after data accesses
+		#used when adding new data or recipents (type 1)
+		self.parent = parent
+		self.child = child
+
+		#used for policy change (type 2)
+		self.pcData = pcData
+		self.pcRecip = pcRecip
+		self.consent = consent
+
+
+	#returns event type
+	def getType(self):
+		return self.eType
+
+	#returns the perameters of the event in list form
+	def getArgs(self):
+		return [self.parent, self.child, self.pcData, self.pcRecip, self.consent]
+
+
+def main():
+	startTime = time.time()
+	mySim = Simulation("testPop.txt", "testScript.txt", "http://SimTest1.org/myonto")
+	mySim.runSimulation()
+	stopTime = time.time()
+
+	print("\n\n\nruntime: ", stopTime - startTime)
+
+if __name__ == "__main__":
+	main()
+
+
