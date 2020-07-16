@@ -17,6 +17,7 @@ class OWLgenerator:
 		#loads or creates ontology
 		if create_new:
 			self.onto = self.createBaseOntology(iri)
+			self.baseForTest()
 		else:
 			self.onto = get_ontology(iri).load()
 
@@ -43,12 +44,12 @@ class OWLgenerator:
 				pass
 			class T0(Time):
 				pass
-			class T1(T0):
-				pass
-			class T2(T1):
-				pass
-			class T3(T2):
-				pass
+			# class T1(T0):
+			# 	pass
+			# class T2(T1):
+			# 	pass
+			# class T3(T2):
+			# 	pass
 			class access(ObjectProperty, AsymmetricProperty):
 				pass
 		return o
@@ -77,6 +78,8 @@ class OWLgenerator:
 	c is either a string or a class'''
 	def getClass(self, c):
 		if isinstance(c, str):
+			# print(c)
+			# print("O: ", self.onto[c])
 			return self.onto[c]
 		else:
 			return c
@@ -140,6 +143,8 @@ class OWLgenerator:
 		classD = self.getClass(Dx)
 
 		#creates instance using only class D, as I do not beileve it can be created with >1, although unsure
+		# print("name of dtype: ", classD)
+		# print("name of new DC: ", name)
 		individual = classD(name)
 
 		#changes the type of the instance from D to (D and U and T and R)
@@ -170,6 +175,23 @@ class OWLgenerator:
 		self.ac_acount += 1
 
 		return individual
+
+
+	'''creates a new class'''
+	def createNewClass(self, parent, newClass):
+		#gets parent class
+		p = self.getClass(parent)
+
+		#creates class that inherits from parent class p
+		c = types.new_class(newClass, (p,), {}	)
+
+		return c
+
+	def searchClass(self, c):
+		return self.onto.search(type=self.getClass(c))
+
+	def searchAll(self):
+		return self.onto.search(type=self.onto)
 
 
 
@@ -225,6 +247,8 @@ def mainWithArgparse():
 
 	#creates new ontology at iri if True, loads one if False
 	parser.add_argument("-l", "-load", nargs=2, help='loads ontology: iri load new', metavar='')
+	#default - if doesnt exist, create
+	#--new
 
 	#creates a consent: D,U, T, R, nameofConsent, retroactivity(True,False)
 	parser.add_argument("-c", "--consent", nargs=6, help='creates consent: D U T R consentName isRetroactive', metavar='')
@@ -234,6 +258,9 @@ def mainWithArgparse():
 	parser.add_argument("-C", "--dataCollection", nargs=4, help="logs data collection: D U T R", metavar='')
 	#creates a dataAccess at dc object, T, R
 	parser.add_argument("-a", "--dataAccess", nargs=3, help='logs data access: dataCollectionObject T R', metavar='')
+	
+	#make automatic...
+	#would need name 
 	#saves with given file name
 	parser.add_argument("-s", nargs=1, help='saves file at given name', metavar='')
 	#runs reasoner
