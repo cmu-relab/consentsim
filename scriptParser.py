@@ -1,4 +1,4 @@
-
+#!env/bin/python3
 import simulation as sim
 import OWLgenerator as ow
 import numpy as np
