@@ -187,11 +187,16 @@ class OWLgenerator:
 
 		return c
 
-	def searchClass(self, c):
-		return self.onto.search(type=self.getClass(c))
+	def getClassInfo(self, c):
+		# return self.onto.search(subclass_of=self.getClass(c))
+		return self.getClass(c).is_a
 
-	def searchAll(self):
-		return self.onto.search(type=self.onto)
+	def onlyConsents(self, t):
+		return self.onto.search(type=t)
+
+	def searchConsents(self, query):
+		# print("search called")
+		return self.onto.search(subclass_of=query)
 
 
 
@@ -206,7 +211,7 @@ class OWLgenerator:
 		#check for inconsistant classes, print if there are some
 		ic = list(default_world.inconsistent_classes())
 		if ic == []:
-			print("\nNo inconsistent classes")
+			print("\n")
 		else:
 			print("Inconsistant Classes:\n", ic)
 
