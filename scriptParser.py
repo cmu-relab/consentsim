@@ -1,4 +1,4 @@
-#!env/bin/python3
+
 import simulation as sim
 import OWLgenerator as ow
 import numpy as np
@@ -21,7 +21,7 @@ class ScriptParser:
 
 		#set up results csv
 		f = open(self.resultsName, "w")
-		f.write("Policy Change Number,Number of users Quit,Number Users Ramaining")
+		f.write("Policy Change Number,Initial Number of Users,Number of users Quit,Number Users Ramaining")
 
 	#parses and runs script
 	def parseScript(self):
@@ -59,15 +59,27 @@ class ScriptParser:
 				dtype, recip, consent = self.parsePolicyChange(line)
 
 				#call method in sim to inact the policy change
-				numLeft, numPolicy, numRemain = self.sim.createPolicyChange(dtype, recip, consent)
+				numLeft, numPolicy, numRemain, numInit = self.sim.createPolicyChange(dtype, recip, consent)
 
 				f = open(self.resultsName, "a")
-				f.write("\n{0},{1},{2}".format(numPolicy, numLeft, numRemain))
+				f.write("\n{0},{1},{2},{3}".format(numPolicy, numInit, numLeft, numRemain))
 				f.close()
+
+			#update minAdded and MaxAdded for number of users added per timestep
+			elif line[0] == "%":
+				# %+ is max added
+				if line[1] == "+":
+					newMax = int(line[2:])
+					self.sim.setMaxAdded(newMax)
+				else:
+					# %- is min added
+					newMin = int(line[2:])
+					self.sim.setMinAdded(newMin)
 
 			#is the update for frequency of data collection and access
 			else:
 				#parse frequency
+				print("line for freq: ", line)
 				dtype, cFreq, aFreq = self.parseFreq(line)
 
 				#updated dictionaries with frequencies
