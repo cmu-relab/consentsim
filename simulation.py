@@ -6,16 +6,20 @@ import OWLgenerator as ow
 import numpy as np
 import random
 import time
+import scriptParser
 
 
 
 class Simulation:
 	
 	def __init__(self, userTable, withdrawTable, owlIRI):
-		#contains which timestep program is in
+		#contains the number of users in each demographic
 		self.userTable = userTable
+
+		#contains which timestep program is in
 		self.timeStep = 0
 
+		#contains the owl ontology knowladge base.
 		self.simOnto = ow.OWLgenerator(owlIRI)
 
 		#parse contingency table demoCols/Rows are col/row lables
@@ -23,15 +27,24 @@ class Simulation:
 		self.demoCols, self.demoRows, self.users, self.userProps = self.parseTable(userTable)
 		self.withdrawProb = self.parseWithdraw(withdrawTable)
 
+		# Table of number of current users in each demographic, gets updated as user numbers change
 		self.currentUsers = self.users
 
+		#tracks the total number of users added through simulation
+		#mainly for naming and access purposes
 		self.totalUsersAdded = self.users.sum()
 
+		#tracks the number of dataCollection instances made
 		self.totalCollectionEvents = 0
 
+		#a list of active users
 		self.activeUsers = []
 
-		#adds users to the ontology
+		#the minimum and maximum number of users that may be added within each timestep
+		self.minAdded = 5
+		self.maxAdded = 15
+
+		#adds initial users to the ontology
 		#should make separate method for this
 		for i in range(1, self.totalUsersAdded+1):
 			newU = "U" + str(i)
@@ -49,14 +62,19 @@ class Simulation:
 		self.accessFreqs = {}
 
 		#contains the numbers of the data collection for the last dc event for each data type
-		#allows access to access the proper dataCollection log
+		#allows access to access the proper dataCollection log for specific user and data type
 		self.dcNumRange = {}
 
 		#to track which users to withdraw consent, and how many to collect/access data from
 		self.numUsersWithdrawn = 0
 
+		#tracks the current and past policies
 		self.initialPolicy = ("D1", "Recipient", "cr",)
 		self.currentPolicy = ("D1", "Recipient", "cr",)
+
+		#a list of all past and current policies
+		#I do not use this to any useful extent
+		#but it may be useful as number of policies becomes more complex or want more stats
 		self.policies = [self.initialPolicy]
 
 		#parse script
@@ -64,6 +82,14 @@ class Simulation:
 
 		# with change dont need
 		# self.name = simScript[:-3] + "owl"
+
+	#update min added 
+	def setMinAdded(self, minimum):
+		self.minAdded = minimum
+
+	#update max added
+	def setMaxAdded(self, maximum):
+		self.maxAdded = maximum
 
 	#parses the contingency table of the population into a numpy array
 	def parseTable(self, tableTxt):
@@ -115,56 +141,6 @@ class Simulation:
 
 		return users
 
-
-	# #parses the script for the simulation into a useful data structure
-	# def parseScript(self, simScriptTxt):
-	# 	file = open(simScriptTxt, "r")
-	# 	eventList = []
-
-	# 	# print("\n\n\nremember to uncomment events\n\n\n")
-	# 	for line in file:
-	# 		typeSplit = line.split(":")
-
-	# 		newEvent = None
-
-
-	# 		#new time interval
-	# 		if typeSplit[0].rstrip("\n") == "^":
-	# 			newEvent = Event()
-	# 			eventList.append(newEvent)
-	# 			# print("New Time step!")
-
-	# 		#policy change
-	# 		elif typeSplit[0] == "+":
-	# 			pcData = typeSplit[1].split(",")
-	# 			newEvent = Event(eType=2, pcData=pcData[0], pcRecip=pcData[1], consent=pcData[2].rstrip("\n"))
-	# 			eventList.append(newEvent)
-	# 			# print("Policy Change of data type {0}, recipient {1}, and {2} type consent".format(pcData[0], pcData[1], pcData[2].rstrip("\n")))
-			
-	# 		#add data or recipients
-	# 		elif typeSplit[0] == "#":
-	# 			newData = typeSplit[1].split(">")
-	# 			newEvent = Event(eType=1, parent=newData[0], child=newData[1].rstrip("\n"))
-	# 			eventList.append(newEvent)
-	# 			# print("class {0} subsumes class {1} to be added".format(newData[0], newData[1].rstrip("\n")))
-			
-	# 		else:
-	# 			#how often data collected, accessed
-	# 			# print(typeSplit)
-	# 			freqs = typeSplit[1].split(",")
-	# 			self.collectFreqs[typeSplit[0]] = float(freqs[0])
-	# 			self.accessFreqs[typeSplit[0]] = float(freqs[1].rstrip("\n"))
-	# 			# print("{0} class collect freq of {1} and access freq of {2}".format(typeSplit[0], freqs[0], freqs[1].rstrip("\n")))
-
-	# 	# print("\nCollect Freqs: ", self.collectFreqs)
-	# 	# print("accessFreqs: ", self.accessFreqs)
-
-	# 	# for e in eventList:
-	# 	# 	print("\ntype: ", e.getType())
-	# 	# 	print("arguments: ", e.getArgs())
-
-	# 	return eventList
-
 	#creates a new timestep
 	def nextTimeStep(self):
 		prevTime = "T" + str(self.timeStep)
@@ -183,6 +159,7 @@ class Simulation:
 	#creates a policy change
 	def createPolicyChange(self, pcData, pcRecip, consent):
 		# print("Policy Change Occured")
+		numInit = len(self.activeUsers)
 
 		t = "T" + str(self.timeStep)
 
@@ -204,10 +181,16 @@ class Simulation:
 		print("Policy Change Occured, ", numLeave, " users left")
 
 
+		count = 0
 		for i in range(self.numUsersWithdrawn, self.numUsersWithdrawn + numLeave):
+			if len(self.activeUsers) == 0:
+				numLeave = count
+				break
 			u = "U" + str(i+1)
 
 			self.activeUsers.remove(u)
+
+			count += 1
 
 		self.numUsersWithdrawn += numLeave
 
@@ -233,19 +216,65 @@ class Simulation:
 		#save num who leave, num who consent, report these stats
 
 		#have to reason before calling search
-		print("instances of this user: ", self.simOnto.searchClass("U1"))
-		print("the new data type is subsumed by: ", self.simOnto.getClass(pcData).is_a)
+		# print("instances of this user: ", self.simOnto.searchClass("U1"))
+		# print("the new data type is subsumed by: ", self.simOnto.getClass(pcData).is_a)
 
-		return (numLeave, len(self.policies)-1, len(self.activeUsers))
+		return (numLeave, len(self.policies)-1, len(self.activeUsers), numInit)
+
+	#parses the str of the consent class to return the data type in consent
+	def parseConsent(self, consentStr, retroactive):
+		s = consentStr.split(".")
+		data = None
+		if retroactive:
+			data = s[-1][:-1]
+			return data
+		else:
+			return None
 
 	#checks if there is user consent for data access
-	def checkConsent(self):
+	def checkConsent(self, u, d, t):
 		#need to remember to call the reasoner right before - can't call in method because it takes forever
-		return
+
+		#will need to update to handle withdrawals
+		userQuery = self.simOnto.searchConsents(self.simOnto.getClass(u))
+		# print(userQuery)
+		allConsents = []
+		if len(userQuery) > 1:
+			allConsents = userQuery[1:]
+		else:
+			return False
+
+		# check that is for the proper data type
+		#need to check access relationships, must be way
+		for c in allConsents:
+			parts = self.simOnto.getClassInfo(c)
+			# print("Parts of c: ", parts)
+			complexParts = str(parts[0])
+
+			#check consent type to prep for parseConsent
+			cName = str(parts[1])
+			cType = False
+			if cName[7] == "r":
+				cType = True
+			# print("retroactive: ", cType)
+
+
+			#gets data type of the consent
+			dtype = self.parseConsent(complexParts, cType)
+			# print("dType of consent: ", dtype)
+
+			if d != dtype:
+				return True
+
+
+		#check that time is current
+		return False
 
 	#collects specified datatypes from users
 	def collectData(self, dtype):
 		print("data was collected for ", dtype)
+
+		# self.simOnto.reason()
 		#loop through users, call owlgen on them
 		startRange = self.totalCollectionEvents + 1
 		# for i in range(self.totalUsersAdded - self.numUsersWithdrawn):
@@ -265,8 +294,12 @@ class Simulation:
 
 		for u in self.activeUsers:
 			t = "T" + str(self.timeStep)
-			self.simOnto.logDataCollection(dtype, u, t, self.currentPolicy[1])
-			self.totalCollectionEvents += 1
+			consents = self.checkConsent(u, dtype, t)
+			# print("consent allowed: ", consents)
+			if consents:
+				# print("Consent veerified, data collected")
+				self.simOnto.logDataCollection(dtype, u, t, self.currentPolicy[1])
+				self.totalCollectionEvents += 1
 
 		return range(startRange, self.totalCollectionEvents + 1)
 
@@ -296,6 +329,7 @@ class Simulation:
 	and updates dictionarys accordingly'''
 	def updateDataLogs(self):
 		#in dataAccess? check for violations
+		self.simOnto.reason()
 
 		#to compare to frequency
 		prob = random.random()
@@ -318,11 +352,12 @@ class Simulation:
 	MIGHT NEED TO ADJUST HANDLING FOR STATS CALC'''
 	def addUsersInSim(self):
 		#generates the number of users added
-		minAdded = 5
-		maxAdded = 15
-		if self.users.sum() > 99:
-			maxAdded = self.users.sum() // 6
-		numAdded = random.randint(minAdded, maxAdded)
+		# self.minAdded = 5
+		# self.maxAdded = 15
+		# maxAdd = self.maxAdded
+		# if self.users.sum() > 99:
+		# 	maxAdded = self.users.sum() // 6
+		numAdded = random.randint(self.minAdded, self.maxAdded)
 		# print("\nnum users added: ", numAdded)
 
 		#calculates new user demographics
@@ -348,8 +383,10 @@ class Simulation:
 			timeAdded = "T" + str(self.timeStep)
 			cName = userName + "initialConsent"
 			self.simOnto.userConsent(self.currentPolicy[0], userName, timeAdded, self.currentPolicy[1], cName, retro)
+		print("prev total users addded: ", self.totalUsersAdded)
 
 		self.totalUsersAdded += numAdded
+		print("after total users added: ", self.totalUsersAdded)
 		self.currentUsers = self.currentUsers + newUserDemos
 		# print("done adding users\n")
 
@@ -374,139 +411,5 @@ class Simulation:
 	def saveOnto(self, name):
 		self.simOnto.save(name)
 		return
-
-
-# '''class that loops through the script file
-# At each line of the file it calls appropriate methods to carry out events'''
-# class ScriptParser:
-
-# 	#takes in script
-# 	def __init__(self, script, simulation, save=True):
-
-# 		self.script = script
-# 		self.sim = simulation
-# 		self.save = save
-
-# 		self.resultsName = script[:-4] + "Results.csv"
-
-# 		#set up results csv
-# 		f = open(self.resultsName, "w")
-# 		f.write("Policy Change Number,Number of users Quit,Number Users Ramaining")
-
-# 	#parses and runs script
-# 	def parseScript(self):
-
-# 		#open script
-# 		file = open(self.script, "r")
-
-# 		#loop through file
-# 		for line in file:
-
-# 			#time step
-# 			if line[0] == "^":
-# 				#increments time step and adds the next time step to the ontology
-# 				self.sim.nextTimeStep()
-				
-# 				#adds random number of users to sim
-# 				self.sim.addUsersInSim()
-				
-# 				#collects and accesses data based on probability
-# 				self.sim.updateDataLogs()
-
-# 			#add class
-# 			elif line[0] == "#":
-# 				#parses arguments for adding class
-# 				p, c = self.parseClassAddition(line)
-
-# 				#adds the classes to the ontology
-# 				self.sim.addOntoClass(p, c)
-
-# 				# print("Class added: ", self.sim.get)
-
-# 			#policy change
-# 			elif line[0] == "+":
-# 				#parses the policy change
-# 				dtype, recip, consent = self.parsePolicyChange(line)
-
-# 				#call method in sim to inact the policy change
-# 				numLeft, numPolicy, numRemain = self.sim.createPolicyChange(dtype, recip, consent)
-
-# 				f = open(self.resultsName, "a")
-# 				f.write("\n{0},{1},{2}".format(numPolicy, numLeft, numRemain))
-# 				f.close()
-
-# 			#is the update for frequency of data collection and access
-# 			else:
-# 				#parse frequency
-# 				dtype, cFreq, aFreq = self.parseFreq(line)
-
-# 				#updated dictionaries with frequencies
-# 				self.sim.updateCollectionFreq(dtype, aFreq)
-# 				self.sim.updateAccessFreq(dtype, cFreq)
-
-# 		#close file
-# 		file.close()
-
-# 		#saves file if True
-# 		if self.save == True:
-# 			#creates name for file based on script name
-# 			name = self.script[:-3] + "owl"
-# 			#saves file
-# 			self.sim.saveOnto(name)
-
-# 	'''parses line to add class to ontology
-# 	returns parent class, new class to be added'''
-# 	def parseClassAddition(self, line):
-# 		#remove flag for line type
-# 		l = line[1:]
-
-# 		#splits into the two classes
-# 		classes = l.split(">")
-
-# 		#returns the two classes
-# 		return classes[0], classes[1].rstrip("\n")
-
-# 	''' parses line to create a policy change
-# 	returns data type, recipient, consent type'''
-# 	def parsePolicyChange(self, line):
-# 		#remove tag for line type
-# 		l = line[1:]
-
-# 		#splits via commas into the 3 data types
-# 		components = l.split(",")
-
-# 		return components[0], components[1], components[2].rstrip("\n")
-
-# 	'''parses frequencies of access and collecion
-# 	returns datatype, collection frequency, access frequency'''
-# 	def parseFreq(self, line):
-# 		#splits to separate dtype from freqs
-# 		sp = line.split(":")
-# 		dtype = sp[0]
-
-# 		#splits to get collection, access frequencies
-# 		f = sp[1].split(",")
-
-# 		return dtype, float(f[0]), float(f[1].rstrip("\n"))
-
-
-
-# def main():
-# 	startTime = time.time()
-
-
-# 	mySim = Simulation("testPop.txt", "testWithdraw.txt", "http://SimTest1.org/myonto")
-# 	myParser = ScriptParser("testScript.txt", mySim)
-# 	myParser.parseScript()
-# 	# mySim.runSimulation()
-
-
-# 	stopTime = time.time()
-# 	print("Users: ", mySim.activeUsers)
-
-# 	print("\n\n\nruntime: ", stopTime - startTime)
-
-# if __name__ == "__main__":
-# 	main()
 
 
