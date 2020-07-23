@@ -43,6 +43,9 @@ class ScriptParser:
 				#collects and accesses data based on probability
 				self.sim.updateDataLogs()
 
+				#copies over new onto so timesteps dont take as long
+				self.sim.copyOnto()
+
 			#add class
 			elif line[0] == "#":
 				#parses arguments for adding class
@@ -136,11 +139,24 @@ class ScriptParser:
 def main():
 	startTime = time.time()
 
-
 	mySim = sim.Simulation("testPop.txt", "testWithdraw.txt", "http://SimTest1.org/myonto")
 	myParser = ScriptParser("testScript.txt", mySim)
 	myParser.parseScript()
-	# mySim.runSimulation()
+
+	#run this many times
+	# while startnum < 30:
+	# 	add_num = ((startnum*1.2) - 10)// 9
+	# 	if add_num == prev_a_num:
+	# 		startnum += add_num
+	# 		continue
+	# 	print("ADDING ", add_num)
+	# 	mySim = sim.Simulation("testPop.txt", "testWithdraw.txt", "http://SimTest1.org/myonto", add_num)
+	# 	myParser = ScriptParser("testScript.txt", mySim)
+	# 	myParser.parseScript()
+	# 	startnum += add_num
+	# 	prev_a_num = add_num
+	# 	print("NEW START NUM ", startnum)
+	# 	# mySim.runSimulation()
 
 
 	stopTime = time.time()
