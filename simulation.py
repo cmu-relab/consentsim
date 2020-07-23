@@ -12,9 +12,17 @@ import scriptParser
 
 class Simulation:
 	
-	def __init__(self, userTable, withdrawTable, owlIRI):
+	def __init__(self, userTable, withdrawTable, owlIRI, multiplyer=0):
+		self.iri = owlIRI
+		self.numCopies = 0
+		self.numDestroyed = 0
+		self.daNum = 0
+		self.oldDCs = []
+		self.allDAs = []
 		#contains the number of users in each demographic
 		self.userTable = userTable
+
+		self.mult = int(multiplyer)
 
 		#contains which timestep program is in
 		self.timeStep = 0
@@ -25,6 +33,10 @@ class Simulation:
 		#parse contingency table demoCols/Rows are col/row lables
 		#users are the actual numbers of users data, userRrops are the calculated proportions users in each demographic category
 		self.demoCols, self.demoRows, self.users, self.userProps = self.parseTable(userTable)
+		# print("mult: ", multiplyer, " users in table: ", self.users.sum())
+		# self.users = self.users + int(multiplyer)
+		# self.users = self.users.astype(int)
+		print("number of Users: ", self.users.sum())
 		self.withdrawProb = self.parseWithdraw(withdrawTable)
 
 		# Table of number of current users in each demographic, gets updated as user numbers change
@@ -33,6 +45,7 @@ class Simulation:
 		#tracks the total number of users added through simulation
 		#mainly for naming and access purposes
 		self.totalUsersAdded = self.users.sum()
+		print("tna ", self.totalUsersAdded)
 
 		#tracks the number of dataCollection instances made
 		self.totalCollectionEvents = 0
@@ -48,6 +61,7 @@ class Simulation:
 		#should make separate method for this
 		for i in range(1, self.totalUsersAdded+1):
 			newU = "U" + str(i)
+			print(newU, " added")
 			self.activeUsers.append(newU)
 			cName = newU + "initialConsent"
 			self.simOnto.createNewClass("User", newU)
@@ -80,8 +94,15 @@ class Simulation:
 		#parse script
 		# self.eventList = self.parseScript(simScript)
 
+		# print(self.activeUsers)
+
 		# with change dont need
 		# self.name = simScript[:-3] + "owl"
+
+
+		# f = open("newOntos100TimeSteps.csv", "w")
+		# f.write("Timestep, Time (s)")
+		# f.close()
 
 	#update min added 
 	def setMinAdded(self, minimum):
@@ -113,6 +134,8 @@ class Simulation:
 		cols = table[0,1:]
 		rows = table[1:,0]
 		users = table[1:, 1:].astype(int)
+
+		users = users + self.mult
 
 		props = users / users.sum()
 
@@ -146,6 +169,8 @@ class Simulation:
 		prevTime = "T" + str(self.timeStep)
 		self.timeStep += 1
 		newTime = "T" + str(self.timeStep)
+
+		print("time step: ", self.timeStep)
 
 		self.simOnto.createNewClass(prevTime, newTime)
 		return
@@ -261,9 +286,11 @@ class Simulation:
 
 			#gets data type of the consent
 			dtype = self.parseConsent(complexParts, cType)
+			# print("does data type match? ", dtype, d)
 			# print("dType of consent: ", dtype)
 
-			if d != dtype:
+			if d == dtype:
+				# print("matched, should collect data for ", d)
 				return True
 
 
@@ -274,7 +301,18 @@ class Simulation:
 	def collectData(self, dtype):
 		print("data was collected for ", dtype)
 
+		# # self.simOnto.reason()
+		# startTime = time.time()
 		# self.simOnto.reason()
+		# stopTime = time.time()
+
+		# finalTime = stopTime - startTime
+
+		# f = open("10Users50timestepsTime.csv", "a")
+		# f.write(self.timeStep, finaltime)
+		# f.close()
+
+		#append how long reasoner takes
 		#loop through users, call owlgen on them
 		startRange = self.totalCollectionEvents + 1
 		# for i in range(self.totalUsersAdded - self.numUsersWithdrawn):
@@ -293,8 +331,11 @@ class Simulation:
 		# 	self.totalCollectionEvents += 1
 
 		for u in self.activeUsers:
+			# print("Time for user ", u, "at time step ", t)
 			t = "T" + str(self.timeStep)
+			print("Time for user ", u, "at time step ", t)
 			consents = self.checkConsent(u, dtype, t)
+			# print("result of consents: ", consents)
 			# print("consent allowed: ", consents)
 			if consents:
 				# print("Consent veerified, data collected")
@@ -313,13 +354,17 @@ class Simulation:
 		time = "T" + str(self.timeStep)
 
 		for i in dcRange:
+			self.daNum += 1
+			self.allDAs.append(self.daNum)
 			# dcNumber = self.totalCollectionEvents - i
 			dcStr = 'dataCollection{0}'.format(i) #dcNumber
 
 			dc = self.simOnto.getDataCollection(dcStr)
 
+			if dc == None:
+				continue
 
-			#assumes data collected for all recipients
+			#creates access log
 			self.simOnto.logDataAccess(dc, time, "Recipient")
 
 		return
@@ -329,13 +374,45 @@ class Simulation:
 	and updates dictionarys accordingly'''
 	def updateDataLogs(self):
 		#in dataAccess? check for violations
+		# startTime = time.time()
+		# self.simOnto.reason()
+		# stopTime = time.time()
+
+		# self.simOnto.reason()
+		startTime = time.time()
 		self.simOnto.reason()
+		stopTime = time.time()
+
+		finalTime = stopTime - startTime
+
+		# if self.timeStep == 1:
+		# 	f = open("newOntos.csv", "a")
+		# 	f.write("\n{0},{1}".format(self.users.sum(), finalTime))
+		# 	f.close()
+		# elif self.timeStep == 5 or self.timeStep == 10:
+		# 	f = open("newOntos.csv", "a")
+		# 	f.write(",{0}".format(finalTime))
+		# 	f.close()
+
+		# f = open("newOntos100TimeSteps.csv", "a")
+		# f.write("\n{0},{1}".format(self.timeStep, finalTime))
+		# f.close()
+
+
+		# timeToReason = stopTime - startTime
+
+		# files = open to append
+		#append time to reason, do not newline
 
 		#to compare to frequency
 		prob = random.random()
 
 		for data, freq in self.collectFreqs.items():
 			if freq > prob:
+				#store old dc ranges
+				if data in self.dcNumRange:
+					self.oldDCs.extend(self.dcNumRange[data])
+
 				#collect data
 				self.dcNumRange[data] = self.collectData(data)		
 				
@@ -391,6 +468,60 @@ class Simulation:
 		# print("done adding users\n")
 
 		return
+
+	#transfers relevent classes, timesteps to a new ontology
+	#deletes non active users, data accesses, and old data collections(for now)
+	#do all the classes for time steps affect how long the reasoner takes? maybe.
+	def copyOnto(self):
+		print("doing this")
+		#saves old owl file
+		# self.numCopies += 1
+		# name = "UpdateFile" + str(self.numCopies) + ".owl"
+		# self.simOnto.save(name)
+
+		# #get new ontology
+		# newOnto = ow.OWLgenerator(self.iri, False)
+
+		#delete users that left
+
+		while self.numDestroyed != self.numUsersWithdrawn:
+			u = "U" + str(self.numDestroyed+1)
+			c = u + "initialConsent"
+			# print(c)
+			self.simOnto.deleteEntity(c)
+			self.simOnto.deleteEntity(u)
+			self.numDestroyed += 1
+
+		# n = 0
+		# for i in range(self.numDestroyed, self.numUsersWithdrawn):
+		# 	u = "U" + str(i+1)
+		# 	c = u + "initialConsent"
+		# 	print(c)
+		# 	self.simOnto.deleteEntity(c)
+		# 	n =+ 1
+
+		# self.numDestroyed += n
+
+		#deletes all data collections
+		for dc in self.oldDCs:
+			dcName = 'dataCollection{0}'.format(dc)
+
+			# print(dcName, " DELETED")
+
+			self.simOnto.deleteEntity(dcName)
+		self.oldDCs = []
+
+		for da in self.allDAs:
+			daName = "dataAccess{0}".format(da)
+
+			self.simOnto.deleteEntity(daName)
+		self.allDAs = []
+
+		# self.simOnto = newOnto
+
+		return
+
+
 
 	#creates new class in OWL ontology
 	def addOntoClass(self, parent, newClass):
