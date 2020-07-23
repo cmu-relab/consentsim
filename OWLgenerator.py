@@ -4,7 +4,7 @@ import argparse
 
 class OWLgenerator:
 
-	def __init__(self, iri, create_new=True):
+	def __init__(self, iri, create_new=True, copy=True):
 		self.dc_counter = 1
 		self.ac_acount = 1
 		self.onto = None
@@ -137,6 +137,7 @@ class OWLgenerator:
 	'''creates a dataCollection individual of passed in types D, U, R, and T'''
 	def logDataCollection(self, Dx, Uy, Tz, Rw):
 		#creates name for instance
+		print("starting log for ", Uy)
 		name = 'dataCollection%i' % self.dc_counter
 
 		#gets class D of instance
@@ -146,6 +147,11 @@ class OWLgenerator:
 		# print("name of dtype: ", classD)
 		# print("name of new DC: ", name)
 		individual = classD(name)
+
+		print("indiv of dtype: ", individual)
+		print("indiv is_a: ", individual.is_a)
+
+		print("inputted classes: ", Dx, Uy, Tz, Rw)
 
 		#changes the type of the instance from D to (D and U and T and R)
 		individual.is_a = [self.getClass(Dx) & self.getClass(Uy) & self.getClass(Tz) & self.getClass(Rw)]
@@ -197,6 +203,19 @@ class OWLgenerator:
 	def searchConsents(self, query):
 		# print("search called")
 		return self.onto.search(subclass_of=query)
+
+	#deletes specified class
+	def deleteEntity(self, e):
+		delete = self.getClass(e)
+
+		print("To be deleted: ", delete)
+
+		if delete != None:
+			# print("the ontology: ", type(self.onto))
+			destroy_entity(delete)
+
+		return
+
 
 
 
