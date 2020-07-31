@@ -33,9 +33,6 @@ class Simulation:
 		#parse contingency table demoCols/Rows are col/row lables
 		#users are the actual numbers of users data, userRrops are the calculated proportions users in each demographic category
 		self.demoCols, self.demoRows, self.users, self.userProps = self.parseTable(userTable)
-		# print("mult: ", multiplyer, " users in table: ", self.users.sum())
-		# self.users = self.users + int(multiplyer)
-		# self.users = self.users.astype(int)
 		print("number of Users: ", self.users.sum())
 		self.withdrawProb = self.parseWithdraw(withdrawTable)
 
@@ -91,18 +88,12 @@ class Simulation:
 		#but it may be useful as number of policies becomes more complex or want more stats
 		self.policies = [self.initialPolicy]
 
-		#parse script
-		# self.eventList = self.parseScript(simScript)
 
-		# print(self.activeUsers)
-
-		# with change dont need
-		# self.name = simScript[:-3] + "owl"
+		#stores number of data collections or accesses
+		self.trackStats = []
+		self.header = ["Time"]
 
 
-		# f = open("newOntos100TimeSteps.csv", "w")
-		# f.write("Timestep, Time (s)")
-		# f.close()
 
 	#update min added 
 	def setMinAdded(self, minimum):
@@ -173,7 +164,7 @@ class Simulation:
 		print("time step: ", self.timeStep)
 
 		self.simOnto.createNewClass(prevTime, newTime)
-		return
+		return self.timeStep
 
 	#adds a class to ontology: data type or recipient
 	#dont need this method
@@ -195,10 +186,6 @@ class Simulation:
 
 		if consent == "cn":
 			retro = False
-		# self.policies.append(newPolicy)
-
-		#reason to determine what users have which consents
-		# self.simOnto.reason()
 
 		#determine how many users will accept and how many leave - table?
 		leaveTable = self.withdrawProb * self.users
@@ -240,10 +227,6 @@ class Simulation:
 
 		#save num who leave, num who consent, report these stats
 
-		#have to reason before calling search
-		# print("instances of this user: ", self.simOnto.searchClass("U1"))
-		# print("the new data type is subsumed by: ", self.simOnto.getClass(pcData).is_a)
-
 		return (numLeave, len(self.policies)-1, len(self.activeUsers), numInit)
 
 	#parses the str of the consent class to return the data type in consent
@@ -262,7 +245,6 @@ class Simulation:
 
 		#will need to update to handle withdrawals
 		userQuery = self.simOnto.searchConsents(self.simOnto.getClass(u))
-		# print(userQuery)
 		allConsents = []
 		if len(userQuery) > 1:
 			allConsents = userQuery[1:]
@@ -273,7 +255,6 @@ class Simulation:
 		#need to check access relationships, must be way
 		for c in allConsents:
 			parts = self.simOnto.getClassInfo(c)
-			# print("Parts of c: ", parts)
 			complexParts = str(parts[0])
 
 			#check consent type to prep for parseConsent
@@ -281,16 +262,12 @@ class Simulation:
 			cType = False
 			if cName[7] == "r":
 				cType = True
-			# print("retroactive: ", cType)
 
 
 			#gets data type of the consent
 			dtype = self.parseConsent(complexParts, cType)
-			# print("does data type match? ", dtype, d)
-			# print("dType of consent: ", dtype)
 
 			if d == dtype:
-				# print("matched, should collect data for ", d)
 				return True
 
 
@@ -301,39 +278,18 @@ class Simulation:
 	def collectData(self, dtype):
 		print("data was collected for ", dtype)
 
-		# # self.simOnto.reason()
-		# startTime = time.time()
-		# self.simOnto.reason()
-		# stopTime = time.time()
-
-		# finalTime = stopTime - startTime
-
-		# f = open("10Users50timestepsTime.csv", "a")
-		# f.write(self.timeStep, finaltime)
-		# f.close()
 
 		#append how long reasoner takes
 		#loop through users, call owlgen on them
 		startRange = self.totalCollectionEvents + 1
-		# for i in range(self.totalUsersAdded - self.numUsersWithdrawn):
-		# 	#the this is set up it assumes that the users leaving are the oldest ones. (The consents created at T0 vs those leaving)
-		# 	#sets up which number user is collected
-		# 	num = i + self.numUsersWithdrawn + 1
 
-		# 	u = "U" + str(num)
-		# 	time = "T" + str(self.timeStep)
 
-		# 	# print("User: ", u, "time: ", time)
-
-		# 	#assumes data collected for all recipients
-		# 	self.simOnto.logDataCollection(dtype, u, time, "Recipient")
-
-		# 	self.totalCollectionEvents += 1
+		numCollected = 0
 
 		for u in self.activeUsers:
 			# print("Time for user ", u, "at time step ", t)
 			t = "T" + str(self.timeStep)
-			print("Time for user ", u, "at time step ", t)
+			# print("Time for user ", u, "at time step ", t)
 			consents = self.checkConsent(u, dtype, t)
 			# print("result of consents: ", consents)
 			# print("consent allowed: ", consents)
@@ -341,8 +297,9 @@ class Simulation:
 				# print("Consent veerified, data collected")
 				self.simOnto.logDataCollection(dtype, u, t, self.currentPolicy[1])
 				self.totalCollectionEvents += 1
+				numCollected += 1
 
-		return range(startRange, self.totalCollectionEvents + 1)
+		return range(startRange, self.totalCollectionEvents + 1), numCollected
 
 	#create access log events for users it can access data from
 	def accessData(self, dtype, dcRange):
@@ -352,6 +309,7 @@ class Simulation:
 
 		#will need to get more specific with this part later
 		time = "T" + str(self.timeStep)
+		numAccessed = 0
 
 		for i in dcRange:
 			self.daNum += 1
@@ -366,62 +324,74 @@ class Simulation:
 
 			#creates access log
 			self.simOnto.logDataAccess(dc, time, "Recipient")
+			numAccessed += 1
 
-		return
+		return numAccessed
 
 	'''checks if data is collected and accessed from each user by random probability
 	if accessed or collected it creates the appropriate logs in the knowlage base
 	and updates dictionarys accordingly'''
 	def updateDataLogs(self):
-		#in dataAccess? check for violations
-		# startTime = time.time()
-		# self.simOnto.reason()
-		# stopTime = time.time()
 
-		# self.simOnto.reason()
+		# measures time to reason
 		startTime = time.time()
 		self.simOnto.reason()
 		stopTime = time.time()
 
 		finalTime = stopTime - startTime
 
-		# if self.timeStep == 1:
-		# 	f = open("newOntos.csv", "a")
-		# 	f.write("\n{0},{1}".format(self.users.sum(), finalTime))
-		# 	f.close()
-		# elif self.timeStep == 5 or self.timeStep == 10:
-		# 	f = open("newOntos.csv", "a")
-		# 	f.write(",{0}".format(finalTime))
-		# 	f.close()
-
-		# f = open("newOntos100TimeSteps.csv", "a")
-		# f.write("\n{0},{1}".format(self.timeStep, finalTime))
-		# f.close()
-
-
-		# timeToReason = stopTime - startTime
-
-		# files = open to append
-		#append time to reason, do not newline
-
 		#to compare to frequency
 		prob = random.random()
 
+		#set up return
+		#increments for every dc log created
+		numDc = 0
+		#increments every access log created
+		numDa = 0
+		# a string appended to after each access and collection
+		allLogs = self.header.copy()
+		allLogs[0] = self.timeStep
+
 		for data, freq in self.collectFreqs.items():
+			#index of data type collection for storing stats
+			cName = data + "_Collection"
+			cIDX = allLogs.index(cName)
+			numToadd = 0
+
 			if freq > prob:
 				#store old dc ranges
 				if data in self.dcNumRange:
 					self.oldDCs.extend(self.dcNumRange[data])
 
 				#collect data
-				self.dcNumRange[data] = self.collectData(data)		
+				self.dcNumRange[data], numToadd = self.collectData(data)
+
+				numDc += numToadd
+
+			allLogs[cIDX] = numToadd	
 				
 		for data, freq in self.accessFreqs.items():
+			#index of data access for stats csv
+			aName = data + "_Access"
+			aIDX = allLogs.index(aName)
+
+			#number of accesses for specific data type
+			numToadd = 0
+
 			#access data
 			if data in self.dcNumRange:
+
 				#checks that appropriate data has been collected
 				if freq > prob:
-					self.accessData(data, self.dcNumRange[data])
+
+					numToadd = self.accessData(data, self.dcNumRange[data])
+					numDa += numToadd
+
+			allLogs[aIDX] = numToadd
+
+		self.trackStats.append(allLogs)
+					
+		return numDc, numDa, allLogs, finalTime
 
 
 	'''adds a randomly generated (add perams later to be more specific) number of users to the simulation
@@ -429,11 +399,6 @@ class Simulation:
 	MIGHT NEED TO ADJUST HANDLING FOR STATS CALC'''
 	def addUsersInSim(self):
 		#generates the number of users added
-		# self.minAdded = 5
-		# self.maxAdded = 15
-		# maxAdd = self.maxAdded
-		# if self.users.sum() > 99:
-		# 	maxAdded = self.users.sum() // 6
 		numAdded = random.randint(self.minAdded, self.maxAdded)
 		# print("\nnum users added: ", numAdded)
 
@@ -443,7 +408,7 @@ class Simulation:
 		newUserDemos = newUserDemos.astype(int)
 		#recalculates number of users added to account for rounding
 		numAdded = newUserDemos.sum()
-		print(numAdded, " users added")
+		# print(numAdded, " users added")
 
 		retro = True
 		if self.currentPolicy[2] == "cn":
@@ -460,30 +425,25 @@ class Simulation:
 			timeAdded = "T" + str(self.timeStep)
 			cName = userName + "initialConsent"
 			self.simOnto.userConsent(self.currentPolicy[0], userName, timeAdded, self.currentPolicy[1], cName, retro)
-		print("prev total users addded: ", self.totalUsersAdded)
+		# print("prev total users addded: ", self.totalUsersAdded)
 
 		self.totalUsersAdded += numAdded
-		print("after total users added: ", self.totalUsersAdded)
+		# print("after total users added: ", self.totalUsersAdded)
 		self.currentUsers = self.currentUsers + newUserDemos
 		# print("done adding users\n")
 
-		return
+		return numAdded, len(self.activeUsers)
 
-	#transfers relevent classes, timesteps to a new ontology
-	#deletes non active users, data accesses, and old data collections(for now)
-	#do all the classes for time steps affect how long the reasoner takes? maybe.
+	'''deletes non active users, data accesses, and old data collections(for now)-this is only possible beause currently this only accesses most recent dcs
+	do all the classes for time steps affect how long the reasoner takes? To much less of an extent that the data collection and accesses do.
+
+	Would be nice to have a version of this method that creates a copy of the ontology and only keeps necessary classes/instances
+	This way it stores past iterations
+
+	Becomes buggy if parameters allow for users to join the simulation in progress'''
 	def copyOnto(self):
-		print("doing this")
-		#saves old owl file
-		# self.numCopies += 1
-		# name = "UpdateFile" + str(self.numCopies) + ".owl"
-		# self.simOnto.save(name)
-
-		# #get new ontology
-		# newOnto = ow.OWLgenerator(self.iri, False)
-
+		
 		#delete users that left
-
 		while self.numDestroyed != self.numUsersWithdrawn:
 			u = "U" + str(self.numDestroyed+1)
 			c = u + "initialConsent"
@@ -492,25 +452,15 @@ class Simulation:
 			self.simOnto.deleteEntity(u)
 			self.numDestroyed += 1
 
-		# n = 0
-		# for i in range(self.numDestroyed, self.numUsersWithdrawn):
-		# 	u = "U" + str(i+1)
-		# 	c = u + "initialConsent"
-		# 	print(c)
-		# 	self.simOnto.deleteEntity(c)
-		# 	n =+ 1
-
-		# self.numDestroyed += n
-
 		#deletes all data collections
 		for dc in self.oldDCs:
 			dcName = 'dataCollection{0}'.format(dc)
 
-			# print(dcName, " DELETED")
 
 			self.simOnto.deleteEntity(dcName)
 		self.oldDCs = []
 
+		#deletes all data accesses
 		for da in self.allDAs:
 			daName = "dataAccess{0}".format(da)
 
@@ -522,6 +472,29 @@ class Simulation:
 		return
 
 
+	#writes data collection stats to csv
+	def statsToCSV(self, name):
+		hString = ""
+		for i in self.header:
+			hString += i
+			hString += ","
+
+		dataString = ""
+		for l in self.trackStats:
+			dataString += "\n"
+
+			for d in l:
+				dataString += str(d)
+				dataString += ","
+
+		#writes to file
+
+		file = open(name, "w")
+		file.write(hString)
+		file.write(dataString)
+		file.close()
+
+
 
 	#creates new class in OWL ontology
 	def addOntoClass(self, parent, newClass):
@@ -530,12 +503,20 @@ class Simulation:
 
 	#updates the dictionary for collection frequency
 	def updateCollectionFreq(self, data, freq):
+		#adds data to header of data to be stored
+		if data not in self.collectFreqs:
+			colName = data + "_Collection"
+			acName = data + "_Access"
+			self.header.append(colName)
+			self.header.append(acName)
 		self.collectFreqs[data] = freq
+		# print("collection frequency: ", self.collectFreqs)
 		return
 
 	#updates the dictionary for access frequency
 	def updateAccessFreq(self, data, freq):
 		self.accessFreqs[data] = freq
+		# print("frequency: ", self.accessFreqs)
 		return
 
 	#saves ontology
