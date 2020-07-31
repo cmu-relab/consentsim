@@ -4,6 +4,8 @@ import OWLgenerator as ow
 import numpy as np
 import random
 import time
+import csv
+import sys
 
 
 '''class that loops through the script file
@@ -17,11 +19,20 @@ class ScriptParser:
 		self.sim = simulation
 		self.save = save
 
-		self.resultsName = script[:-4] + "Results.csv"
+		self.resultsName = script[:-4] + "PolicyChangeResults.csv"
+		self.timeName = script[:-4] + "TimeStepResults.csv"
+		self.allLogData = script[:-4] + "LogEvents.csv"
 
-		#set up results csv
+		self.allDataTypes = ["Timestep"]
+
+		#set up pc results csv
 		f = open(self.resultsName, "w")
 		f.write("Policy Change Number,Initial Number of Users,Number of users Quit,Number Users Ramaining")
+		f.close()
+
+		f = open(self.timeName, "w")
+		f.write("Timestep, Users joined, Total Users, number data collections,number data accesses,time taken")
+		f.close()
 
 	#parses and runs script
 	def parseScript(self):
@@ -34,17 +45,27 @@ class ScriptParser:
 
 			#time step
 			if line[0] == "^":
+				startTime = time.time()
 				#increments time step and adds the next time step to the ontology
-				self.sim.nextTimeStep()
+				t = self.sim.nextTimeStep()
 				
 				#adds random number of users to sim
-				self.sim.addUsersInSim()
+				numJoin, numTotal = self.sim.addUsersInSim()
 				
 				#collects and accesses data based on probability
-				self.sim.updateDataLogs()
+				numDc, numDa, allLogs, timeTaken = self.sim.updateDataLogs()
 
 				#copies over new onto so timesteps dont take as long
 				self.sim.copyOnto()
+
+				endTime = time.time()
+
+				runTime = endTime - startTime
+
+				f = open(self.timeName, "a")
+				f.write("\n{0},{1},{2},{3},{4},{5}".format(t, numJoin, numTotal, numDc, numDa, runTime))
+				f.close()
+
 
 			#add class
 			elif line[0] == "#":
@@ -86,11 +107,17 @@ class ScriptParser:
 				dtype, cFreq, aFreq = self.parseFreq(line)
 
 				#updated dictionaries with frequencies
-				self.sim.updateCollectionFreq(dtype, aFreq)
-				self.sim.updateAccessFreq(dtype, cFreq)
+				dtypeLog = self.sim.updateCollectionFreq(dtype, cFreq)
+				self.sim.updateAccessFreq(dtype, aFreq)
+
+				if dtype != None:
+					self.allDataTypes.append(dtypeLog)
 
 		#close file
 		file.close()
+
+		#writes data stats to csv
+		self.sim.statsToCSV(self.allLogData)
 
 		#saves file if True
 		if self.save == True:
@@ -127,6 +154,7 @@ class ScriptParser:
 	def parseFreq(self, line):
 		#splits to separate dtype from freqs
 		sp = line.split(":")
+		# print("Spit at : : ", sp)
 		dtype = sp[0]
 
 		#splits to get collection, access frequencies
@@ -140,23 +168,8 @@ def main():
 	startTime = time.time()
 
 	mySim = sim.Simulation("testPop.txt", "testWithdraw.txt", "http://SimTest1.org/myonto")
-	myParser = ScriptParser("testScript.txt", mySim)
+	myParser = ScriptParser(sys.argv[1], mySim)
 	myParser.parseScript()
-
-	#run this many times
-	# while startnum < 30:
-	# 	add_num = ((startnum*1.2) - 10)// 9
-	# 	if add_num == prev_a_num:
-	# 		startnum += add_num
-	# 		continue
-	# 	print("ADDING ", add_num)
-	# 	mySim = sim.Simulation("testPop.txt", "testWithdraw.txt", "http://SimTest1.org/myonto", add_num)
-	# 	myParser = ScriptParser("testScript.txt", mySim)
-	# 	myParser.parseScript()
-	# 	startnum += add_num
-	# 	prev_a_num = add_num
-	# 	print("NEW START NUM ", startnum)
-	# 	# mySim.runSimulation()
 
 
 	stopTime = time.time()
