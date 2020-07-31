@@ -137,21 +137,14 @@ class OWLgenerator:
 	'''creates a dataCollection individual of passed in types D, U, R, and T'''
 	def logDataCollection(self, Dx, Uy, Tz, Rw):
 		#creates name for instance
-		print("starting log for ", Uy)
+		# print("starting log for ", Uy)
 		name = 'dataCollection%i' % self.dc_counter
 
 		#gets class D of instance
 		classD = self.getClass(Dx)
 
 		#creates instance using only class D, as I do not beileve it can be created with >1, although unsure
-		# print("name of dtype: ", classD)
-		# print("name of new DC: ", name)
 		individual = classD(name)
-
-		print("indiv of dtype: ", individual)
-		print("indiv is_a: ", individual.is_a)
-
-		print("inputted classes: ", Dx, Uy, Tz, Rw)
 
 		#changes the type of the instance from D to (D and U and T and R)
 		individual.is_a = [self.getClass(Dx) & self.getClass(Uy) & self.getClass(Tz) & self.getClass(Rw)]
@@ -208,10 +201,7 @@ class OWLgenerator:
 	def deleteEntity(self, e):
 		delete = self.getClass(e)
 
-		print("To be deleted: ", delete)
-
 		if delete != None:
-			# print("the ontology: ", type(self.onto))
 			destroy_entity(delete)
 
 		return
@@ -342,89 +332,3 @@ def mainWithArgparse():
 
 if __name__ == "__main__":
 	mainWithArgparse()
-	# main()
-	# # my_onto = OWLgenerator("file://C:/Users/Cassidy/Documents/consentSimulation.owl")
-	# my_onto = OWLgenerator("http://test.org/myonto", create_new=True)
-	# my_onto.baseForTest()
-
-	# rC1 = my_onto.userConsent("D1", "U1", "T1", "R1", "rC1")
-	# rC2 = my_onto.userConsent("D2", "U1", "T2", "R2", "rC2")
-	# nrC1 = my_onto.userConsent("D1", "U1", "T1", "R1", "nrC1", retroactive=False)
-
-	# rW1 = my_onto.userWithdrawal("D1", "U1", "T1", "R1", "rW1")
-	# nrW1 = my_onto.userWithdrawal("D1", "U1", "T1", "R1", "nrW1", retroactive=False)
-
-
-	# dataColl1 = my_onto.logDataCollection("D1", "U1", "T1", "R1")
-	# dataColl2 = my_onto.logDataCollection("D2", "U1", "T0", "R3")
-
-	# da1 = my_onto.logDataAccess(dataColl1, "T1", "R1")
-
-	# my_onto.reason()
-
-
-	# my_onto.save("testonto.owl")
-	
-	
-	''' test to check things'''
-	#test getClass with string passed in
-	# T = my_onto.getClass("T1")
-	# print("Class T1: ", T)
-
-	# #testing consents and withdrawals
-	# rC1 = my_onto.Consent("D1", "U1", "T1", "R1", "rC1")
-	# nrC1 = my_onto.Consent("D1", "U1", "T1", "R1", "nrC1", False)
-	# # rW1 = my_onto.Withdrawal("D1", "U1", "T1", "R1", "rW1")
-	# # nrW1 = my_onto.Withdrawal("D1", "U1", "T1", "R1", "nrW1", False)
-
-	# #testing getClass with class passed in
-	# testClass = my_onto.getClass(rC1)
-	# print("Class rC1: ", testClass)
-
-	# print(rC1)
-	# print(nrC1)
-	# # print(rW1)
-	# # print(nrW1)
-
-	# dc1 = my_onto.createDataCollection("dc1", "D1", "U1", "T1", "R1")
-	# da1 = my_onto.createDataAccess("da1", dc1, "T1", "R1")
-
-	# print(dc1)
-	# print(da1)
-
-
-	# #Creating scenario 1
-	# print("Scenario 1: revocation")
-
-	# #Scenario 1 (and 2) step 1: consent by U1 to data collection of D1 for R1 at T1
-	# rC1 = my_onto.Consent("D1", "U1", "T1", "R1", "rC1")
-	# # print("rC1 classes: ", rC1.is_a)
-
-	# #s1 (and 2) step 2: data is collected for D1 and U1 at T1 for R1
-	# dc1 = my_onto.createDataCollection("dc1", "D1", "U1", "T1", "R1")
-
-	# #s1 step 3: data is collected for D1 and U1 at T2 for R1
-	# dc2 = my_onto.createDataCollection("dc2", "D1", "U1", "T2", "R1")
-
-	# #s1 step 4: withdraw consent by U1 at T3 for data collection D1 for R1
-	# #TypeError: metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
-	# # nrW1 = my_onto.Withdrawal("D1", "U1", "T3", "R1", "nrW1", False)
-
-	# #s1 step 5: collect data D1 U1 at T3 (violtes cosnent)
-	# dc3 = my_onto.createDataCollection("dc3", "D1", "U1", "T3", "R1")
-
-	# # print("rC1 class: ", rC1)
-	# print("rC1 type: ", type(rC1))
-	# print("dc1 type: ", type(dc1))
-
-
-	# #testing dataAccess instances in saved files:
-	# # da1 = my_onto.createDataAccess("da1", dc1, "T1", "R1")
-
-	# # print("\ndata collection 1 initial classes: ", dc1.__class__)
-
-	# # my_onto.reason()
-
-	# # print("\ndata collection1 after reasoner: ", dc1.__class__)
-
-	# my_onto.save("or2s1.owl")
