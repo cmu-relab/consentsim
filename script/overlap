@@ -1,0 +1,10 @@
+grant Location datasubject1 Advertiser :consent1
+collect Location datasubject1 Advertiser
+step
+grant Location datasubject1 Advertiser :consent2
+collect Location datasubject1 Advertiser
+access Location datasubject1 Advertiser
+step
+withdraw :consent1
+step
+withdraw retro :consent2

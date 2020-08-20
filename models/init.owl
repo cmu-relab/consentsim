@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xml:base="http://relab.cs.cmu.edu/consent"
+         xmlns="http://relab.cs.cmu.edu/consent#">
+
+<owl:Ontology rdf:about="http://relab.cs.cmu.edu/consent"/>
+
+<owl:ObjectProperty rdf:about="#accessedBy">
+  <rdfs:domain rdf:resource="#Data"/>
+  <rdfs:range rdf:resource="#Recipient"/>
+</owl:ObjectProperty>
+
+<owl:ObjectProperty rdf:about="#accessedAt">
+  <rdfs:domain rdf:resource="#Data"/>
+  <rdfs:range rdf:resource="#Time"/>
+</owl:ObjectProperty>
+
+<owl:ObjectProperty rdf:about="#collectedBy">
+  <rdfs:domain rdf:resource="#Data"/>
+  <rdfs:range rdf:resource="#Recipient"/>
+</owl:ObjectProperty>
+
+<owl:ObjectProperty rdf:about="#collectedAt">
+  <rdfs:domain rdf:resource="#Data"/>
+  <rdfs:range rdf:resource="#Time"/>
+</owl:ObjectProperty>
+
+<owl:ObjectProperty rdf:about="#about">
+  <rdfs:domain rdf:resource="#Data"/>
+  <rdfs:range rdf:resource="#DataSubject"/>
+</owl:ObjectProperty>
+
+<owl:ObjectProperty rdf:about="#authorizes">
+  <owl:inverseOf rdf:resource="#authorizedBy"/>
+</owl:ObjectProperty>
+
+<owl:ObjectProperty rdf:about="#authorizedBy">
+  <rdfs:domain rdf:resource="#Data"/>
+  <rdfs:range rdf:resource="#Consent"/>
+  <owl:inverseOf rdf:resource="#authorizes"/>
+</owl:ObjectProperty>
+
+<owl:Class rdf:about="#Time">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:Class rdf:about="#T1">
+  <rdfs:subClassOf rdf:resource="#Time"/>
+</owl:Class>
+
+<owl:Class rdf:about="#Consent">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:Class rdf:about="#Data">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:Class rdf:about="#DataSubject">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:Class rdf:about="#Recipient">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:Class rdf:about="#Access">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+<owl:Class rdf:about="#Collection">
+  <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Thing"/>
+</owl:Class>
+
+
+</rdf:RDF>
