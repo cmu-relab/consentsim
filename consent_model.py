@@ -140,15 +140,22 @@ class ConsentModel:
                     & self.onto.accessedAt.some(start_access)
                 )
             ))
-        self.onto.Collection.is_a.append(
-            self.onto.authorizedBy.some(OneOf([consent]))
-        )
-        self.onto.Access.is_a.append(
-            self.onto.authorizedBy.some(OneOf([consent]))
-        )
+        # self.onto.Collection.is_a.append(
+        #     self.onto.authorizedBy.some(OneOf([consent]))
+        # )
+        # self.onto.Access.is_a.append(
+        #     self.onto.authorizedBy.some(OneOf([consent]))
+        # )
 
         # add consent to consent set
-        self.onto.ConsentSet.equivalent_to.append(OneOf([consent]))
+        # self.onto.ConsentSet.equivalent_to.append(OneOf([consent]))
+        
+        # add consent to consent equivalence set
+        try:
+            self.onto.ConsentSet.equivalent_to[0].instances.append(consent)
+        except IndexError:    
+            self.onto.ConsentSet.equivalent_to.append(OneOf([consent]))
+        #self.onto.ConsentSet.equivalent_to = [OneOf([self.onto.ConsentSet.equivalent_to,consent])]
 
         # housekeeping and return
         self.next_consent += 1
