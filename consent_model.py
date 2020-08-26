@@ -140,22 +140,12 @@ class ConsentModel:
                     & self.onto.accessedAt.some(start_access)
                 )
             ))
-        # self.onto.Collection.is_a.append(
-        #     self.onto.authorizedBy.some(OneOf([consent]))
-        # )
-        # self.onto.Access.is_a.append(
-        #     self.onto.authorizedBy.some(OneOf([consent]))
-        # )
-
-        # add consent to consent set
-        # self.onto.ConsentSet.equivalent_to.append(OneOf([consent]))
         
         # add consent to consent equivalence set
         try:
             self.onto.ConsentSet.equivalent_to[0].instances.append(consent)
         except IndexError:    
             self.onto.ConsentSet.equivalent_to.append(OneOf([consent]))
-        #self.onto.ConsentSet.equivalent_to = [OneOf([self.onto.ConsentSet.equivalent_to,consent])]
 
         # housekeeping and return
         self.next_consent += 1
@@ -217,7 +207,39 @@ class ConsentModel:
         )
         self.next_access += 1
         return event
-            
+
+    def isCollectable(self, data, data_subject, recipient):
+        start_time = self.current_time()
+        stop_time = self.next_time(self.current_time())
+        query = types.new_class('query', (self.onto.Collection,))
+        query.equivalent_to.append(
+            data
+            & self.onto.about.value(data_subject)
+            & self.onto.collectedBy.some(recipient)
+            & self.onto.collectedAt.some(start_time & Not(stop_time))
+            & self.onto.authorizedBy.some(self.onto.ConsentSet)
+        )
+        sync_reasoner()
+        result = self.onto.Nothing in query.equivalent_to
+        destroy_entity(query)
+        return result
+
+    def isAccessible(self, data, data_subject, recipient):
+        start_time = self.current_time()
+        stop_time = self.next_time(self.current_time())
+        query = types.new_class('query', (self.onto.Access,))
+        query.equivalent_to.append(
+            data
+            & self.onto.about.value(data_subject)
+            & self.onto.collectedBy.some(recipient)
+            & self.onto.collectedAt.some(start_time & Not(stop_time))
+            & self.onto.authorizedBy.some(self.onto.ConsentSet)
+        )
+        sync_reasoner()
+        result = self.onto.Nothing in query.equivalent_to        
+        destroy_entity(query)
+        return result
+
     def save(self, filename):
         with open(filename, 'wb') as f:
             self.onto.save(file=f, format='rdfxml')

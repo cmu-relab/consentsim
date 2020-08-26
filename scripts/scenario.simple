@@ -1,7 +1,9 @@
 grant Location datasubject1 Advertiser :consent1
 collect Location datasubject1 Advertiser
 step
+test collect Location datasubject1 Advertiser true
 withdraw :consent1
+test collect Location datasubject1 Advertiser false
 step
 grant Location datasubject1 Advertiser :consent2
 collect Location datasubject1 Advertiser
