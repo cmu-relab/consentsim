@@ -9,11 +9,11 @@ The consent simulation framework is used to simulate events concerning the grant
 ## Usage
 
 1. Create an initial consent model, which contains an unrefined data and recipient hierarchy:
-./consent_model.py init.owl --init
+./consent_model.py init.owl
 
 2. After creating the initial consent model, the model user can load the init.owl file into Protege and refine the Data and Recipient classes by adding sub-classes and defining disjoint relationships among these classes. The refined OWL file can then be saved as a base.owl model for manipulation using scripted scenarios.
 
 3. Simulate a scripted consent scenario:
 ./simulator.py base.owl script/scenario.simple models/simple.owl
 
-After running the scenario, the model user can load the simple.owl model into Protege to inspect and query the model.
+4. After running the scenario, the model user can load the simple.owl model into Protege to inspect and query the model.

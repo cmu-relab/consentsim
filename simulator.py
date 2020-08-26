@@ -54,17 +54,17 @@ def simulate(script, model):
 def main(argv):
     parser = argparse.ArgumentParser(
         description='Simulate consent model events')
-    parser.add_argument('owl_file', type=str,
+    parser.add_argument('base_model', type=str,
                         help='the OWL file containing the base model')
     parser.add_argument('script', type=str,
                         help='the simulation script describing a scenario')
-    parser.add_argument('output', type=str, nargs='?',
-                        help='save the simulation result to the output file')
+    parser.add_argument('ext_model', type=str, nargs='?',
+                        help='the OWL file to save the simulation results')
     args = parser.parse_args()
-    model = ConsentModel.load(args.owl_file)
+    model = ConsentModel.load(args.base_model)
     simulate(args.script, model)
     if args.output:
-        model.save(args.output)
+        model.save(args.ext_model)
     
 if __name__ == "__main__":
     main(sys.argv[1:])

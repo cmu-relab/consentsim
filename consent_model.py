@@ -255,23 +255,17 @@ def main(argv):
         description='Generate a consent model')
     parser.add_argument(
         'owl_file', type=str,
-        help='OWL file containing consent model')
+        help='OWL file to save new consent model')
     parser.add_argument(
-        '--ns', type=str, default='https://relab.cs.cmu.edu',
-        help='namespace for declaring classes')
-    parser.add_argument(
-        '--init', action='store_true', default=False,
-        help='write initial model to the given OWL')
+        '--namespace', type=str, default='https://relab.cs.cmu.edu',
+        help='namespace for class definitions')
     args = parser.parse_args()
 
-    if args.init:
-        model = ConsentModel.init(args.ns)
-        model.save(args.owl_file)
-        return
+    # initialize a new consent model
+    model = ConsentModel.init(args.ns)
 
-    scenario2(args.owl_file)
-    
-    sync_reasoner()
+    # save consent model to the given file
+    model.save(args.owl_file)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
