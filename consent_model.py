@@ -222,7 +222,7 @@ class ConsentModel:
         sync_reasoner()
         result = self.onto.Nothing in query.equivalent_to
         destroy_entity(query)
-        return result
+        return not result
 
     def isAccessible(self, data, data_subject, recipient):
         start_time = self.current_time()
@@ -238,7 +238,7 @@ class ConsentModel:
         sync_reasoner()
         result = self.onto.Nothing in query.equivalent_to        
         destroy_entity(query)
-        return result
+        return not result
 
     def save(self, filename):
         with open(filename, 'wb') as f:
