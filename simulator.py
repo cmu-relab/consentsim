@@ -71,7 +71,11 @@ def simulate(script, model):
             elif args[4] == 'false' and not result:
                 print('PASS: %s (%s)' % (' '.join(args[0:-1]), args[-1]))
             else:
-                print('FAIL: %s (%s)' % (' '.join(args[0:-1]), args[-1]))
+                print('FAIL: %s (expected: %s, found: %s)' % (
+                    ' '.join(args[0:-1]), args[-1], str(result).lower()))
+        else:
+            print('Unrecognized command: %s' % line)
+            
     log.close()
     sys.stderr = stderr
     return
