@@ -194,6 +194,8 @@ class ConsentModel:
                     ) | (
                         self.onto.Access
                         & self.onto.collectedAt.some(current_time)
+                    ) | (
+                        self.onto.Access
                         & self.onto.accessedAt.some(current_time)
                     )
                 )
