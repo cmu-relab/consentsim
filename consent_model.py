@@ -220,7 +220,7 @@ class ConsentModel:
             & self.onto.authorizedBy.some(self.onto.ConsentSet)
         )
         sync_reasoner()
-        result = self.onto.Nothing in query.equivalent_to
+        result = Nothing in query.equivalent_to
         destroy_entity(query)
         return not result
 
@@ -236,7 +236,7 @@ class ConsentModel:
             & self.onto.authorizedBy.some(self.onto.ConsentSet)
         )
         sync_reasoner()
-        result = self.onto.Nothing in query.equivalent_to        
+        result = Nothing in query.equivalent_to        
         destroy_entity(query)
         return not result
 
