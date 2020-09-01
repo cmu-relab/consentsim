@@ -10,8 +10,13 @@ def simulate(script, model):
     stderr = sys.stderr
     sys.stderr = log
     for line in lines:
+        # skip empty lines
+        if line.strip() == '':
+            continue
+
+        # process each command with trailing arguments
         command = line.split()
-        
+
         if command[0] == 'step':
             time = model.step()
             
