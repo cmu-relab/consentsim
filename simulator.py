@@ -36,7 +36,7 @@ def simulate(script, model, logging=True):
                 value = command[2] == 'true'
                 model.destroy_queries = value
 
-            print('toggle %s = %s' % (command[1], value))
+            print('set %s = %s' % (command[1], value))
             
         elif command[0] == 'grant':
             # check for optional retroactivity
