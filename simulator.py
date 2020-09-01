@@ -68,7 +68,7 @@ def simulate(script, model):
             if args[0] == 'collect':
                 result = model.isCollectable(data, ds, recipient)
             elif args[0] == 'access':
-                result = model,isAccessible(data, ds, recipient)
+                result = model.isAccessible(data, ds, recipient)
 
             # report query result
             if args[4] == 'true' and result:
