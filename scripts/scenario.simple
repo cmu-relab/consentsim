@@ -16,7 +16,6 @@ step
 withdraw retro :consent2
 step
 assume false collect Location datasubject1 Advertiser
-set destroy_queries false
-assume false access Location datasubject1 Advertiser T1
+assume true access Location datasubject1 Advertiser T1
 assume false access Location datasubject1 Advertiser T4
-set destroy_queries true
+
