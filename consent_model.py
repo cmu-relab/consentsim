@@ -193,7 +193,6 @@ class ConsentModel:
                         & self.onto.collectedAt.some(current_time)
                     ) | (
                         self.onto.Access
-                        & self.onto.collectedAt.some(current_time)
                         & self.onto.accessedAt.some(current_time)
                     )
                 )
