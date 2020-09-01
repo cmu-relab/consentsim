@@ -11,6 +11,8 @@ class ConsentModel:
         self.next_collection = 1
         self.next_consent = 1
         self.this_time = 1
+        self.destroy_queries = True
+        self.next_query = 1
         
         for i in onto.Access.instances():
             x = int(i.name[1:])
@@ -42,6 +44,8 @@ class ConsentModel:
                 pass
             class T1(Time):
                 pass
+            class T2(T1):
+                pass
             class Consent(Thing):
                 pass
             class ConsentSet(Thing):
@@ -66,7 +70,7 @@ class ConsentModel:
                 pass
             class collectedAt(Data >> Time):
                 pass
-            class about(Data >> DataSubjet):
+            class about(Data >> DataSubject):
                 pass
             class authorizes(Consent >> Data):
                 pass
@@ -78,12 +82,25 @@ class ConsentModel:
     def load(cls, iri):
         onto = get_ontology(iri).load()
         return cls(onto)
-                    
-    def current_time(self):
+
+    def earliestStartTime(self):
+        return self.onto.T1
+    
+    def currentTime(self):
         return self.onto['T%i' % self.this_time]
 
-    def earliest_start_time(self):
-        return self.onto.T1
+    def nextTime(self, time=None):
+        if not time:
+            time = self.currentTime()
+        next_time = int(time.__name__[1:]) + 1
+        while self.this_time + 1 < next_time:
+            self.step()
+        return self.onto['T%i' % next_time]
+
+    def getTime(self, time_name):
+        if int(time_name[1:]) <= self.this_time:
+            return self.onto[time_name]
+        return None
 
     def createData(self, class_name):
         if class_name in globals():
@@ -97,25 +114,26 @@ class ConsentModel:
         return types.new_class(class_name, (self.onto.Recipient,))
 
     def step(self):
-        current_time = self.current_time()
         self.this_time += 1
-        return types.new_class("T%i" % self.this_time, (current_time,))
+        current_time = self.currentTime()
 
-    def next_time(self, time):
-        next_time = 'T%i' % (int(time.__name__[1:]) + 1)
-        while self.onto[next_time] == None:
-            step = self.step()
-        return self.onto[next_time]
+        # create the next time
+        next_time = types.new_class(
+            'T%i' % (self.this_time + 1), (current_time,))
+
+        # return the current time
+        return current_time
         
-    def grantConsent(self, data, data_subject, recipient, retroactive=False):
+    def grantConsent(self, data, data_subject, recipient,
+                     retroactive=False):
         consent = self.onto.Consent('consent%i' % self.next_consent)
             
         # setup consent start times
         if retroactive:
-            start_access = self.earliest_start_time()
+            start_access = self.earliestStartTime()
         else:
-            start_access = self.current_time()
-        start_collect = self.current_time()
+            start_access = self.currentTime()
+        start_collect = self.currentTime()
 
         # define consent data
         consent.is_a.append(
@@ -153,7 +171,7 @@ class ConsentModel:
 
     def withdrawConsent(self, consent, retroactive=False):
         # collection and access start time
-        current_time = self.current_time()
+        current_time = self.currentTime()
         if not retroactive:
             consent.is_a.append(
                 Not(self.onto.authorizes.some(
@@ -181,97 +199,118 @@ class ConsentModel:
                 )
             ))
 
-    def collect(self, data, data_subject, recipient):
-        start_time = self.current_time()
-        stop_time = self.next_time(self.current_time())
+    def collect(self, data, data_subject, collect_recipient):
+        # set collection time
+        collect_at = [self.currentTime(), self.nextTime()]
+        
+        # create collection event
         event = self.onto.Collection('c%i' % self.next_collection)
         event.is_a.append(
             data
             & self.onto.about.value(data_subject)
-            & self.onto.collectedBy.some(recipient)
-            & self.onto.collectedAt.some(start_time & Not(stop_time))
+            & self.onto.collectedBy.some(collect_recipient)
+            & self.onto.collectedAt.some(collect_at[0] & Not(collect_at[1]))
         )
+
+        # housekeeping and return
         self.next_collection += 1
         return event
 
-    def access(self, data, data_subject, recipient):
-        start_time = self.current_time()
-        stop_time = self.next_time(self.current_time())
+    def access(self, data, data_subject, collect_recipient,
+               collect_at=[None, None]):
+        # set collection time, if unspecified
+        if not collect_at[0]:
+            collect_at[0] = self.currentTime()
+        if not collect_at[1]:
+            collect_at[1] = self.nextTime(collect_at[0])
+
+        # set access time
+        access_at = [self.currentTime(), self.nextTime()]
+
+        # create access event
         event = self.onto.Access('a%i' % self.next_access)
         event.is_a.append(
             data
             & self.onto.about.value(data_subject)
-            & self.onto.accessedAt.some(start_time & Not(stop_time))
-            & self.onto.accessedBy.some(recipient)
-            & self.onto.collectedAt.some(start_time & Not(stop_time))
+            & self.onto.accessedAt.some(access_at[0] & Not(access_at[1]))
+            & self.onto.collectedBy.some(collect_recipient)
+            & self.onto.collectedAt.some(collect_at[0] & Not(collect_at[1]))
         )
+
+        # housekeeping and return
         self.next_access += 1
         return event
 
-    def isCollectable(self, data, data_subject, recipient):
-        start_time = self.current_time()
-        stop_time = self.next_time(self.current_time())
-        query = types.new_class('query', (self.onto.Collection,))
+    def isCollectable(self, data, data_subject,
+                      collect_recipient, collect_at=[None, None]):
+        # set collection time, if unspecified
+        if not collect_at[0]:
+            collect_at[0] = self.currentTime()
+        if not collect_at[1]:
+            collect_at[1] = self.nextTime(collect_at[0])
+
+        # create query
+        query = types.new_class(
+            'query%i' % self.next_query, (self.onto.Collection,))
         query.equivalent_to.append(
             data
             & self.onto.about.value(data_subject)
-            & self.onto.collectedBy.some(recipient)
-            & self.onto.collectedAt.some(start_time & Not(stop_time))
+            & self.onto.collectedBy.some(collect_recipient)
+            & self.onto.collectedAt.some(collect_at[0] & Not(collect_at[1]))
             & self.onto.authorizedBy.some(self.onto.ConsentSet)
         )
+
+        # test query in knowledgebase
         sync_reasoner()
         result = Nothing in query.equivalent_to
-        destroy_entity(query)
+
+        # housekeeping and return
+        if self.destroy_queries:
+            destroy_entity(query)
+        self.next_query += 1
         return not result
 
-    def isAccessible(self, data, data_subject, recipient):
-        start_time = self.current_time()
-        stop_time = self.next_time(self.current_time())
-        query = types.new_class('query', (self.onto.Access,))
+    def isAccessible(self, data, data_subject,
+            collect_recipient, collect_at=[None, None],
+                     access_at=[None, None]):
+
+        # set collection time, if unspecified
+        if not collect_at[0]:
+            collect_at[0] = self.currentTime()
+        if not collect_at[1]:
+            collect_at[1] = self.nextTime(collect_at[0])
+        # set access time, if unspecified
+        if not access_at[0]:
+            access_at[0] = self.currentTime()
+        if not access_at[1]:
+            access_at[1] = self.nextTime(access_at[0])
+
+        # create query
+        query = types.new_class(
+            'query%i' % self.next_query, (self.onto.Access,))
         query.equivalent_to.append(
             data
             & self.onto.about.value(data_subject)
-            & self.onto.collectedBy.some(recipient)
-            & self.onto.collectedAt.some(start_time & Not(stop_time))
+            & self.onto.collectedBy.some(collect_recipient)
+            & self.onto.collectedAt.some(collect_at[0] & Not(collect_at[1]))
+            & self.onto.accessedAt.some(access_at[0] & Not(access_at[1]))
             & self.onto.authorizedBy.some(self.onto.ConsentSet)
         )
+
+        # test query in knowledgebase
         sync_reasoner()
-        result = Nothing in query.equivalent_to        
-        destroy_entity(query)
+        result = Nothing in query.equivalent_to
+
+        # housekeeping and return
+        if self.destroy_queries:
+            destroy_entity(query)
+        self.next_query += 1
         return not result
 
     def save(self, filename):
         with open(filename, 'wb') as f:
             self.onto.save(file=f, format='rdfxml')
 
-def scenario1(owl_file):
-    model = ConsentModel.load('file://' + owl_file)
-    ds = model.createDataSubject('datasubject1')
-    data = model.createData('Location')
-    advertiser = model.createRecipient('Advertiser')
-    consent1 = model.grantConsent(data, ds, advertiser)
-    model.step()
-    consent2 = model.grantConsent(data, ds, advertiser, retroactive=False)
-    model.step()
-    model.withdrawConsent(consent1, retroactive=False)
-    model.step()
-    model.withdrawConsent(consent2, retroactive=True)
-    model.save(owl_file)
-    
-def scenario2(owl_file):
-    model = ConsentModel.load('file://' + owl_file)
-    ds = model.createDataSubject('datasubject1')
-    data = model.createData('Location')
-    advertiser = model.createRecipient('Advertiser')
-    consent1 = model.grantConsent(data, ds, advertiser)
-    model.step()
-    model.withdrawConsent(consent1, retroactive=False)
-    model.step()
-    consent2 = model.grantConsent(data, ds, advertiser, retroactive=False)
-    model.step()
-    model.withdrawConsent(consent2, retroactive=True)
-    model.save(owl_file)
-        
 def main(argv):
     parser = argparse.ArgumentParser(
         description='Generate a consent model')
@@ -284,8 +323,8 @@ def main(argv):
     args = parser.parse_args()
 
     # initialize a new consent model
-    model = ConsentModel.init(args.ns)
-
+    model = ConsentModel.init(args.namespace)
+    
     # save consent model to the given file
     model.save(args.owl_file)
 

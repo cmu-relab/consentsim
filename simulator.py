@@ -3,86 +3,138 @@
 import sys, argparse
 from consent_model import ConsentModel
 
-def simulate(script, model):
+def simulate(script, model, logging=True):
+    # redirect standard error to the simulation log
+    if logging:
+        log = open('simulation.log', 'w')
+        stderr = sys.stderr
+        sys.stderr = log
+
+    # setup table to lookup consent reference names
     consent_history = {}
+
+    # read and process lines in script
     lines = open(script, 'r').readlines()
-    log = open('simulation.log', 'w')
-    stderr = sys.stderr
-    sys.stderr = log
     for line in lines:
         # skip empty lines
         if line.strip() == '':
+            continue
+        elif line[0] == '#':
             continue
 
         # process each command with trailing arguments
         command = line.split()
 
         if command[0] == 'step':
+            # advance one time step
             time = model.step()
+
+        elif command[0] == 'set':
+            # toggle states in the model or simulator
+            value = None
+            if command[1] == 'destroy_queries':
+                value = command[2] == 'true'
+                model.destroy_queries = value
+
+            print('toggle %s = %s' % (command[1], value))
             
         elif command[0] == 'grant':
+            # check for optional retroactivity
             retro = False
             if command[1] == 'retro':
                 retro = True
                 args = command[2:]
             else:
                 args = command[1:]
+
+            # parse consent arguments, add consent to model and history
             data = model.createData(args[0])
-            ds = model.createDataSubject(args[1])
-            recipient = model.createRecipient(args[2])
+            data_subject = model.createDataSubject(args[1])
+            collect_recipient = model.createRecipient(args[2])
             consent = model.grantConsent(
-                data, ds, recipient, retroactive=retro)
+                data, data_subject, collect_recipient, retroactive=retro)
             consent_history[args[3]] = consent
 
         elif command[0] == 'withdraw':
+            # check for optional retroactivity
             retro = False
             if command[1] == 'retro':
                 retro = True
                 args = command[2:]
             else:
                 args = command[1:]
+
+            # lookup and withdraw consent
             consent = consent_history[args[0]]
             model.withdrawConsent(consent, retroactive=retro)
             
         elif command[0] == 'collect':
+            # parse collection arguments, add collection to model
             args = command[1:]
             data = model.createData(args[0])
-            ds = model.createDataSubject(args[1])
+            data_subject = model.createDataSubject(args[1])
             recipient = model.createRecipient(args[2])
-            model.collect(data, ds, recipient)
+            model.collect(data, data_subject, recipient)
             
         elif command[0] == 'access':
+            # parse access arguments, add access to model
             args = command[1:]
             data = model.createData(args[0])
-            ds = model.createDataSubject(args[1])
+            data_subject = model.createDataSubject(args[1])
             recipient = model.createRecipient(args[2])
-            model.access(data, ds, recipient)
+            
+            # check for optional time constraints
+            collect_at = [None, None]
+            if len(args) > 3:
+                collect_at[0] = model.getTime(args[4])
+            if len(args) > 4:
+                collect_at[1] = model.getTime(args[5])
 
-        elif command[0] == 'test':
+            model.access(data, data_subject, recipient, collect_at)
+
+        elif command[0] == 'assume':
             args = command[1:]
-            data = model.createData(args[1])
-            ds = model.createDataSubject(args[2])
-            recipient = model.createRecipient(args[3])
+            expected = args[0]
+            action = args[1]
+            data = model.createData(args[2])
+            data_subject = model.createDataSubject(args[3])
+            recipient = model.createRecipient(args[4])
 
+            # check for optional time constraints
+            collect_at = [None, None]
+            if len(args) > 5:
+                collect_at[0] = model.getTime(args[5])
+            if len(args) > 6:
+                collect_at[1] = model.getTime(args[6])
+            access_at = [None, None]
+            if len(args) > 7:
+                access_at[0] = model.getTime(args[7])
+            if len(args) > 8:
+                access_at[1] = model.getTime(args[8])
+                
             # run query for action type
-            if args[0] == 'collect':
-                result = model.isCollectable(data, ds, recipient)
-            elif args[0] == 'access':
-                result = model.isAccessible(data, ds, recipient)
+            if action == 'collect':
+                result = model.isCollectable(
+                    data, data_subject, recipient, collect_at)
+            elif action == 'access':
+                result = model.isAccessible(
+                    data, data_subject, recipient, collect_at, access_at)
 
             # report query result
-            if args[4] == 'true' and result:
-                print('PASS: %s (%s)' % (' '.join(args[0:-1]), args[-1]))
-            elif args[4] == 'false' and not result:
-                print('PASS: %s (%s)' % (' '.join(args[0:-1]), args[-1]))
+            if expected == 'true' and result:
+                print('PASS: %s (%s)' % (' '.join(args[1:]), args[0]))
+            elif expected == 'false' and not result:
+                print('PASS: %s (%s)' % (' '.join(args[1:]), args[0]))
             else:
                 print('FAIL: %s (expected: %s, found: %s)' % (
-                    ' '.join(args[0:-1]), args[-1], str(result).lower()))
+                    ' '.join(args[1:]), args[0], str(result).lower()))
         else:
             print('Unrecognized command: %s' % line)
-            
-    log.close()
-    sys.stderr = stderr
+
+    # return standard error to original configuration
+    if logging:
+        log.close()
+        sys.stderr = stderr
     return
             
 def main(argv):
@@ -94,9 +146,11 @@ def main(argv):
                         help='the simulation script describing a scenario')
     parser.add_argument('ext_model', type=str, nargs='?',
                         help='the OWL file to save the simulation results')
+    parser.add_argument('--nologging', action='store_true',
+                        help='log standard error to simulation.log')
     args = parser.parse_args()
     model = ConsentModel.load(args.base_model)
-    simulate(args.script, model)
+    simulate(args.script, model, logging = args.nologging == False)
     if args.ext_model:
         model.save(args.ext_model)
     

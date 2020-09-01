@@ -214,6 +214,14 @@
     
 
 
+    <!-- http://relab.cs.cmu.edu/consent#T2 -->
+
+    <owl:Class rdf:about="http://relab.cs.cmu.edu/consent#T2">
+        <rdfs:subClassOf rdf:resource="http://relab.cs.cmu.edu/consent#T1"/>
+    </owl:Class>
+    
+
+
     <!-- http://relab.cs.cmu.edu/consent#Time -->
 
     <owl:Class rdf:about="http://relab.cs.cmu.edu/consent#Time">

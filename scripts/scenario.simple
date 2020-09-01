@@ -1,13 +1,22 @@
 grant Location datasubject1 Advertiser :consent1
+assume true collect Location datasubject1 Advertiser
 collect Location datasubject1 Advertiser
-test collect Location datasubject1 Advertiser true
 step
 withdraw :consent1
 step
-test collect Location datasubject1 Advertiser false
+assume false collect Location datasubject1 Advertiser
+assume true access Location datasubject1 Advertiser T1
 step
 grant Location datasubject1 Advertiser :consent2
+assume true collect Location datasubject1 Advertiser
 collect Location datasubject1 Advertiser
+assume true access Location datasubject1 Advertiser
 access Location datasubject1 Advertiser
 step
 withdraw retro :consent2
+step
+assume false collect Location datasubject1 Advertiser
+set destroy_queries false
+assume false access Location datasubject1 Advertiser T1
+assume false access Location datasubject1 Advertiser T4
+set destroy_queries true
