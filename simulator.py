@@ -114,20 +114,33 @@ def simulate(script, model, logging=True):
                 
             # run query for action type
             if action == 'collect':
-                result = model.isCollectable(
+                index, result = model.isCollectable(
                     data, data_subject, recipient, collect_at)
             elif action == 'access':
-                result = model.isAccessible(
+                index, result = model.isAccessible(
                     data, data_subject, recipient, collect_at, access_at)
 
             # report query result
             if expected == 'true' and result:
-                print('PASS: %s (%s)' % (' '.join(args[1:]), args[0]))
+                print('%s PASS: %s (%s)' % (
+                    index, ' '.join(args[1:]), args[0]))
             elif expected == 'false' and not result:
-                print('PASS: %s (%s)' % (' '.join(args[1:]), args[0]))
+                print('%s PASS: %s (%s)' % (
+                    index, ' '.join(args[1:]), args[0]))
             else:
-                print('FAIL: %s (expected: %s, found: %s)' % (
-                    ' '.join(args[1:]), args[0], str(result).lower()))
+                print('%s FAIL: %s (expected: %s, found: %s)' % (
+                    index, ' '.join(args[1:]), args[0], str(result).lower()))
+
+        # create new data and recipient classes
+        elif command[0] == 'new':
+            args = command[2:]
+            if command[1] == 'data':
+                if len(args) == 1:
+                    args.append('Data')
+                model.createData(args[0], args[1])
+            elif command[1] == 'recipient':
+                model.createRecipient(args[0])
+                
         else:
             print('Unrecognized command: %s' % line)
 

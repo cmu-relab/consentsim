@@ -102,15 +102,35 @@ class ConsentModel:
             return self.onto[time_name]
         return None
 
-    def createData(self, class_name):
-        if class_name in globals():
-            return globals()[class_name]
-        return types.new_class(class_name, (self.onto.Data,))
+    def createData(self, class_name, super_class_name='Data'):
+        super_class = None
+        for cls in self.onto.classes():
+            if 'base.%s' % super_class_name == str(cls):
+                super_class = cls
+                break
+        if not super_class:
+            super_class = types.new_class(super_class_name, (self.onto.Data,))
+
+        sub_class = None
+        for cls in self.onto.classes():
+            if 'base.%s' % class_name == str(cls):
+                sub_class = cls
+                break
+        if not sub_class:
+            sub_class = types.new_class(class_name, (super_class,))
+            
+        if not super_class in sub_class.is_a:
+            sub_class.is_a.append(super_class)
+            
+        return sub_class
     
     def createDataSubject(self, indiv_name):
         return self.onto.DataSubject(indiv_name)
 
     def createRecipient(self, class_name):
+        if class_name in globals():
+            return globals()[class_name]
+        
         return types.new_class(class_name, (self.onto.Recipient,))
 
     def step(self):
@@ -268,8 +288,9 @@ class ConsentModel:
         # housekeeping and return
         if self.destroy_queries:
             destroy_entity(query)
+        index = self.next_query
         self.next_query += 1
-        return not result
+        return index, not result
 
     def isAccessible(self, data, data_subject,
             collect_recipient, collect_at=[None, None],
@@ -305,8 +326,9 @@ class ConsentModel:
         # housekeeping and return
         if self.destroy_queries:
             destroy_entity(query)
+        index = self.next_query
         self.next_query += 1
-        return not result
+        return index, not result
 
     def save(self, filename):
         with open(filename, 'wb') as f:

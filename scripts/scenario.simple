@@ -1,3 +1,5 @@
+new data Gender DemographicData
+new recipient Authentication
 grant Location datasubject1 Advertiser :consent1
 assume true collect Location datasubject1 Advertiser
 collect Location datasubject1 Advertiser
