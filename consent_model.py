@@ -1,6 +1,6 @@
 #!env/bin/python3
 
-import argparse, types, os
+import argparse, types, os, tempfile, io
 from owlready2 import *
 
 class ConsentModel:
@@ -128,11 +128,27 @@ class ConsentModel:
         return self.onto.DataSubject(indiv_name)
 
     def createRecipient(self, class_name):
-        if class_name in globals():
-            return globals()[class_name]
-        
+        for cls in self.onto.classes():
+            if 'base.%s' % class_name == str(cls):
+                return cls
+            
         return types.new_class(class_name, (self.onto.Recipient,))
 
+    def renameClass(self, old_name, new_name):
+        # workaround to change a class name
+        temp = io.BytesIO()
+        self.onto.save(temp, format='rdfxml')
+
+        # replace all instances of old class name with new
+        rdfxml = temp.getvalue().decode('utf-8')
+        rdfxml = rdfxml.replace('#%s"' % old_name, '#%s"' % new_name)
+
+        # write new ontology
+        temp = tempfile.NamedTemporaryFile(mode='w+')
+        temp.write(rdfxml)
+        temp.seek(0)
+        self.onto = get_ontology(temp.name).load()
+    
     def step(self):
         self.this_time += 1
         current_time = self.currentTime()
