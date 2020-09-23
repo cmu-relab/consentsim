@@ -102,24 +102,26 @@ class ConsentModel:
             return self.onto[time_name]
         return None
 
-    def createData(self, class_name, super_class_name='Data'):
-        super_class = None
+    def lookupClass(self, class_name):
         for cls in self.onto.classes():
-            if 'base.%s' % super_class_name == str(cls):
-                super_class = cls
-                break
+            if cls.name == class_name:
+                return cls
+        return None
+
+    def createData(self, class_name, super_class_name = None):
+        sub_class = self.lookupClass(class_name)
+        if not super_class_name:
+            if sub_class:
+                return sub_class
+            else:
+                return types.new_class(class_name, (self.onto.Data,))
+        
+        super_class = self.lookupClass(super_class_name)
         if not super_class:
             super_class = types.new_class(super_class_name, (self.onto.Data,))
-
-        sub_class = None
-        for cls in self.onto.classes():
-            if 'base.%s' % class_name == str(cls):
-                sub_class = cls
-                break
         if not sub_class:
             sub_class = types.new_class(class_name, (super_class,))
-            
-        if not super_class in sub_class.is_a:
+        elif not super_class in sub_class.is_a:
             sub_class.is_a.append(super_class)
             
         return sub_class
@@ -129,10 +131,16 @@ class ConsentModel:
 
     def createRecipient(self, class_name):
         for cls in self.onto.classes():
-            if 'base.%s' % class_name == str(cls):
+            if class_name == cls.name:
                 return cls
             
         return types.new_class(class_name, (self.onto.Recipient,))
+
+    def createDisjoint(self, classes):
+        disjoint = []
+        for i in range(len(classes)):
+            disjoint.append(self.lookupClass(classes[i]))
+        AllDisjoint(disjoint)
 
     def renameClass(self, old_name, new_name):
         # workaround to change a class name
