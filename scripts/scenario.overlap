@@ -1,0 +1,24 @@
+new data RealTimeLocation
+new data DrivingRoute RealTimeLocation
+new data WalkingRoute RealTimeLocation
+new disjoint DrivingRoute WalkingRoute
+new recipient Advertiser
+grant RealTimeLocation datasubject1 Advertiser :consent1
+collect DrivingRoute datasubject1 Advertiser
+step
+grant DrivingRoute datasubject1 Advertiser :consent2
+collect WalkingRoute datasubject1 Advertiser
+step
+withdraw :consent1
+step
+assume false collect WalkingRoute datasubject1 Advertiser
+assume true access DrivingRoute datasubject1 Advertiser
+assume true access DrivingRoute datasubject1 Advertiser T1 T2
+step
+assume true collect DrivingRoute datasubject1 Advertiser
+collect DrivingRoute datasubject1 Advertiser
+step
+withdraw retro :consent2
+assume false collect DrivingRoute datasubject1 Advertiser
+assume false access DrivingRoute datasubject1 Advertiser T4 T5
+assume true access DrivingRoute datasubject1 Advertiser T1 T2
