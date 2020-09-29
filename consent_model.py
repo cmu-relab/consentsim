@@ -1,6 +1,6 @@
 #!env/bin/python3
 
-import argparse, types, os, tempfile, io
+import argparse, types, os
 from owlready2 import *
 
 class ConsentModel:
@@ -103,60 +103,43 @@ class ConsentModel:
         return None
 
     def lookupClass(self, class_name):
-        for cls in self.onto.classes():
-            if cls.name == class_name:
-                return cls
-        return None
+        return getattr(self.onto, class_name)
 
-    def createData(self, class_name, super_class_name = None):
-        sub_class = self.lookupClass(class_name)
-        if not super_class_name:
-            if sub_class:
-                return sub_class
-            else:
-                return types.new_class(class_name, (self.onto.Data,))
-        
+    def createData(self, class_name, super_class_name = 'Data'):
         super_class = self.lookupClass(super_class_name)
         if not super_class:
             super_class = types.new_class(super_class_name, (self.onto.Data,))
-        if not sub_class:
-            sub_class = types.new_class(class_name, (super_class,))
-        elif not super_class in sub_class.is_a:
-            sub_class.is_a.append(super_class)
-            
-        return sub_class
+        cls = self.lookupClass(class_name)
+        if not cls:
+            cls = types.new_class(class_name, (super_class,))
+        elif not super_class in cls.is_a:
+            cls.is_a.append(super_class)
+        return cls
     
     def createDataSubject(self, indiv_name):
         return self.onto.DataSubject(indiv_name)
 
     def createRecipient(self, class_name):
-        for cls in self.onto.classes():
-            if class_name == cls.name:
-                return cls
-            
-        return types.new_class(class_name, (self.onto.Recipient,))
+        cls = self.lookupClass(class_name)
+        if not cls:
+            cls = types.new_class(class_name, (self.onto.Recipient,))
+        return cls
 
+    def createEquivalent(self, classes):
+        equiv = []
+        for i in range(len(classes)):
+            cls1 = getattr(self.onto, classes[i])
+            for j in range(i + 1, len(classes)):
+                cls2 = getattr(self.onto, classes[j])
+                cls1.equivalent_to.append(cls2)
+    
     def createDisjoint(self, classes):
         disjoint = []
         for i in range(len(classes)):
-            disjoint.append(self.lookupClass(classes[i]))
+            cls = getattr(self.onto, classes[i])
+            disjoint.append(cls)
         AllDisjoint(disjoint)
 
-    def renameClass(self, old_name, new_name):
-        # workaround to change a class name
-        temp = io.BytesIO()
-        self.onto.save(temp, format='rdfxml')
-
-        # replace all instances of old class name with new
-        rdfxml = temp.getvalue().decode('utf-8')
-        rdfxml = rdfxml.replace('#%s"' % old_name, '#%s"' % new_name)
-
-        # write new ontology
-        temp = tempfile.NamedTemporaryFile(mode='w+')
-        temp.write(rdfxml)
-        temp.seek(0)
-        self.onto = get_ontology(temp.name).load()
-    
     def step(self):
         self.this_time += 1
         current_time = self.currentTime()

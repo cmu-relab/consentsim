@@ -1,6 +1,6 @@
 #!env/bin/python3
 
-import sys, argparse
+import sys, argparse, traceback
 from consent_model import ConsentModel
 
 def simulate(script, model, logging=True):
@@ -27,132 +27,138 @@ def simulate(script, model, logging=True):
         # process each command with trailing arguments
         command = line.split()
 
-        if command[0] == 'step':
-            # advance one time step
-            time = model.step()
+        try:        
+            if command[0] == 'step':
+                # advance one time step
+                time = model.step()
 
-        elif command[0] == 'set':
-            # toggle states in the model or simulator
-            value = None
-            if command[1] == 'destroy_queries':
-                value = command[2] == 'true'
-                model.destroy_queries = value
-
-            print('set %s = %s' % (command[1], value))
+            elif command[0] == 'set':
+                # toggle states in the model or simulator
+                value = None
+                if command[1] == 'destroy_queries':
+                    value = command[2] == 'true'
+                    model.destroy_queries = value
+                print('set %s = %s' % (command[1], value))
             
-        elif command[0] == 'grant':
-            # check for optional retroactivity
-            retro = False
-            if command[1] == 'retro':
-                retro = True
-                args = command[2:]
-            else:
+            elif command[0] == 'grant':
+                # check for optional retroactivity
+                retro = False
+                if command[1] == 'retro':
+                    retro = True
+                    args = command[2:]
+                else:
+                    args = command[1:]
+
+                # parse consent arguments, add consent to model and history
+                data = model.createData(args[0])
+                data_subject = model.createDataSubject(args[1])
+                collect_recipient = model.createRecipient(args[2])
+                consent = model.grantConsent(
+                    data, data_subject, collect_recipient, retroactive=retro)
+                consent_history[args[3]] = consent
+
+            elif command[0] == 'withdraw':
+                # check for optional retroactivity
+                retro = False
+                if command[1] == 'retro':
+                    retro = True
+                    args = command[2:]
+                else:
+                    args = command[1:]
+
+                # lookup and withdraw consent
+                consent = consent_history[args[0]]
+                model.withdrawConsent(consent, retroactive=retro)
+            
+            elif command[0] == 'collect':
+                # parse collection arguments, add collection to model
                 args = command[1:]
-
-            # parse consent arguments, add consent to model and history
-            data = model.createData(args[0])
-            data_subject = model.createDataSubject(args[1])
-            collect_recipient = model.createRecipient(args[2])
-            consent = model.grantConsent(
-                data, data_subject, collect_recipient, retroactive=retro)
-            consent_history[args[3]] = consent
-
-        elif command[0] == 'withdraw':
-            # check for optional retroactivity
-            retro = False
-            if command[1] == 'retro':
-                retro = True
-                args = command[2:]
-            else:
+                data = model.createData(args[0])
+                data_subject = model.createDataSubject(args[1])
+                recipient = model.createRecipient(args[2])
+                model.collect(data, data_subject, recipient)
+            
+            elif command[0] == 'access':
+                # parse access arguments, add access to model
                 args = command[1:]
-
-            # lookup and withdraw consent
-            consent = consent_history[args[0]]
-            model.withdrawConsent(consent, retroactive=retro)
+                data = model.createData(args[0])
+                data_subject = model.createDataSubject(args[1])
+                recipient = model.createRecipient(args[2])
             
-        elif command[0] == 'collect':
-            # parse collection arguments, add collection to model
-            args = command[1:]
-            data = model.createData(args[0])
-            data_subject = model.createDataSubject(args[1])
-            recipient = model.createRecipient(args[2])
-            model.collect(data, data_subject, recipient)
-            
-        elif command[0] == 'access':
-            # parse access arguments, add access to model
-            args = command[1:]
-            data = model.createData(args[0])
-            data_subject = model.createDataSubject(args[1])
-            recipient = model.createRecipient(args[2])
-            
-            # check for optional time constraints
-            collect_at = [None, None]
-            if len(args) > 3:
-                collect_at[0] = model.getTime(args[4])
-            if len(args) > 4:
-                collect_at[1] = model.getTime(args[5])
+                # check for optional time constraints
+                collect_at = [None, None]
+                if len(args) > 3:
+                    collect_at[0] = model.getTime(args[4])
+                if len(args) > 4:
+                    collect_at[1] = model.getTime(args[5])
+                model.access(data, data_subject, recipient, collect_at)
 
-            model.access(data, data_subject, recipient, collect_at)
+            elif command[0] == 'assume':
+                args = command[1:]
+                expected = args[0]
+                action = args[1]
+                data = model.createData(args[2])
+                data_subject = model.createDataSubject(args[3])
+                recipient = model.createRecipient(args[4])
 
-        elif command[0] == 'assume':
-            args = command[1:]
-            expected = args[0]
-            action = args[1]
-            data = model.createData(args[2])
-            data_subject = model.createDataSubject(args[3])
-            recipient = model.createRecipient(args[4])
-
-            # check for optional time constraints
-            collect_at = [None, None]
-            if len(args) > 5:
-                collect_at[0] = model.getTime(args[5])
-            if len(args) > 6:
-                collect_at[1] = model.getTime(args[6])
-            access_at = [None, None]
-            if len(args) > 7:
-                access_at[0] = model.getTime(args[7])
-            if len(args) > 8:
-                access_at[1] = model.getTime(args[8])
+                # check for optional time constraints
+                collect_at = [None, None]
+                if len(args) > 5:
+                    collect_at[0] = model.getTime(args[5])
+                if len(args) > 6:
+                    collect_at[1] = model.getTime(args[6])
+                access_at = [None, None]
+                if len(args) > 7:
+                    access_at[0] = model.getTime(args[7])
+                if len(args) > 8:
+                    access_at[1] = model.getTime(args[8])
                 
-            # run query for action type
-            if action == 'collect':
-                index, result = model.isCollectable(
-                    data, data_subject, recipient, collect_at)
-            elif action == 'access':
-                index, result = model.isAccessible(
-                    data, data_subject, recipient, collect_at, access_at)
+                # run query for action type
+                if action == 'collect':
+                    index, result = model.isCollectable(
+                        data, data_subject, recipient, collect_at)
+                elif action == 'access':
+                    index, result = model.isAccessible(
+                        data, data_subject, recipient, collect_at, access_at)
 
-            # report query result
-            if expected == 'true' and result:
-                print('%s PASS: %s (%s)' % (
-                    index, ' '.join(args[1:]), args[0]))
-            elif expected == 'false' and not result:
-                print('%s PASS: %s (%s)' % (
-                    index, ' '.join(args[1:]), args[0]))
+                # report query result
+                if expected == 'true' and result:
+                    print('%s PASS: %s (%s)' % (
+                        index, ' '.join(args[1:]), args[0]))
+                elif expected == 'false' and not result:
+                    print('%s PASS: %s (%s)' % (
+                        index, ' '.join(args[1:]), args[0]))
+                else:
+                    print('%s FAIL: %s (expected: %s, found: %s)' % (
+                        index,
+                        ' '.join(args[1:]),
+                        args[0],
+                        str(result).lower()))
+
+            # create new data and recipient classes
+            elif command[0] == 'new':
+                args = command[2:]
+                if command[1] == 'data':
+                    if len(args) == 1:
+                        args.append('Data')
+                    model.createData(args[0], args[1])
+                elif command[1] == 'recipient':
+                    model.createRecipient(args[0])
+                elif command[1] == 'disjoint':
+                    model.createDisjoint(args)
+
+            elif command[0] == 'rename':
+                args = command[1:]
+                model.createEquivalent(args)
             else:
-                print('%s FAIL: %s (expected: %s, found: %s)' % (
-                    index, ' '.join(args[1:]), args[0], str(result).lower()))
+                print('Unrecognized command: %s' % line)
 
-        # create new data and recipient classes
-        elif command[0] == 'new':
-            args = command[2:]
-            if command[1] == 'data':
-                if len(args) == 1:
-                    args.append('Data')
-                model.createData(args[0], args[1])
-            elif command[1] == 'recipient':
-                model.createRecipient(args[0])
-            elif command[1] == 'disjoint':
-                model.createDisjoint(args)
-
-        elif command[0] == 'rename':
-            args = command[1:]
-            model.renameClass(args[0], args[1])
-
-        else:
-            print('Unrecognized command: %s' % line)
-
-    
+        except Exception:
+            exc_type, value, tb = sys.exc_info()
+            print('\nError at line %s: %s' % (lineNo, line))
+            print('%s: %s' % (exc_type.__name__, value))
+            traceback.print_tb(tb)
+            return
             
     # return standard error to original configuration
     if logging:

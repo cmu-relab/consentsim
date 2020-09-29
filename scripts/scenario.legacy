@@ -1,17 +1,18 @@
-set destroy_queries false
 new data Location Data
+new recipient Advertiser
 grant Location datasubject1 Advertiser :consent1
 collect Location datasubject1 Advertiser
 step
 withdraw retro :consent1
 step
+new data LegacyLocation Data
 rename Location LegacyLocation
-new data Location
-new data LegacyLocation Location
-new data RealTimeLocation Location
-new data AppLocation Location
+new data NewLocation Data
+new data LegacyLocation NewLocation
+new data RealTimeLocation NewLocation
+new data AppLocation NewLocation
 new disjoint AppLocation RealTimeLocation
-new disjoint RealTimeLocation AppLocation
+new disjoint AppLocation LegacyLocation
 grant retro AppLocation datasubject1 Advertiser :consent2
 assume false access LegacyLocation datasubject1 Advertiser
 assume true access AppLocation datasubject1 Advertiser
