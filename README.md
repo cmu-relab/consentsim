@@ -11,10 +11,10 @@ The consent simulation framework is used to simulate events concerning the grant
 1. Create an initial consent model, which contains an unrefined data and recipient hierarchy:
 ./consent_model.py init.owl
 
-2. After creating the initial consent model, the model user can load the init.owl file into Protege and refine the Data and Recipient classes by adding sub-classes and defining disjoint relationships among these classes. The refined OWL file can then be saved as a base.owl model for manipulation using scripted scenarios.
+2. After creating the initial consent model, the model user can load the init.owl file into Protege and refine the Data and Recipient classes by adding sub-classes and defining disjoint relationships among these classes. The refined OWL file can then be saved as a base.owl model for manipulation using scripted scenarios. *The model user can also modify these hierarchies using simulator commands within the scripted scenario.*
 
 3. Simulate a scripted consent scenario:
-./simulator.py base.owl script/scenario.simple models/simple.owl
+./simulator.py models/init.owl script/scenario.simple models/simple.owl
 
 4. After running the scenario, the model user can load the simple.owl model into Protege to inspect and query the model.
 
@@ -41,6 +41,30 @@ The following variables may appear in the language:
 * <ACCESS-START> is a sub-concept of the Time concept, which denotes the start of a time interval. If ommitted, it will be the current time step.
 
 * <ACCESS-STOP> is a sub-concept of the Time concept, which denotes the end of a time interval. If ommitted, it will be one time step beyond the access start by default.
+
+### Extending the Initial Ontology
+
+The following simulator commands can be used to extend the initial ontology.
+
+The new data command is used to create a new Data subclass. The first class name is the subclass to the second class name. If the second class name is omitted, then it is assumed to be the Data class.
+
+* new data <DATA> <DATA>
+* Ex. new data DemographicData Data
+
+The new recipient command is used to create a new Recipient subclass.
+
+* new recipient <RECIPIENT>
+* Ex. new recipient Advertiser
+  
+The new disjoint command is used to declare when two or more classes as disjoint. The command can be applied to any Data subclasses, or any Recipient subclasses.
+
+* new disjoint <DATA> <DATA> ...
+* Ex. new disjoin Age Location EmailAddress
+  
+The new equiv command is used to declare when two or more classes are equivalent.
+
+* new equiv <DATA> <DATA>
+* Ex. new equiv Location CellularLocation
 
 ### Event Descriptions
 
@@ -81,4 +105,4 @@ Tests, expressed using the assume command, generate temporary queries that are n
 
 ### Comments
 
-Any line that begins with a pound sign will be ignored by the simulator.
+Any line that begins with a pound sign (#) will be ignored by the simulator.
