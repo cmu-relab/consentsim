@@ -1,14 +1,15 @@
-set destroy_queries false
+# Example of reclassifying an existing data class
+
 new data Location Data
-new data HardwareLocation Location
-new data BluetoothLocation HardwareLocation
-grant HardwareLocation datasubject1 Advertiser :consent1
+new data Deviceocation Location
+new data BluetoothLocation DeviceLocation
+grant DeviceLocation datasubject1 Advertiser :consent1
 collect BluetoothLocation datasubject1 Advertiser
 step
 withdraw retro :consent1
 step
-new data IndoorLocation Location
-new data BluetoothLocation IndoorLocation
-grant retro IndoorLocation datasubject1 Advertiser :consent2
+new data CoarseLocation Location
+new data BluetoothLocation CoarseLocation
+grant retro CoarseLocation datasubject1 Advertiser :consent2
 assume true access BluetoothLocation datasubject1 Advertiser T3
 assume true access BluetoothLocation datasubject1 Advertiser T1 T3

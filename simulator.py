@@ -146,10 +146,8 @@ def simulate(script, model, logging=True):
                     model.createRecipient(args[0])
                 elif command[1] == 'disjoint':
                     model.createDisjoint(args)
-
-            elif command[0] == 'rename':
-                args = command[1:]
-                model.createEquivalent(args)
+                elif command[0] == 'eqiv':
+                    model.createEquivalent(args)
             else:
                 print('Unrecognized command: %s' % line)
 

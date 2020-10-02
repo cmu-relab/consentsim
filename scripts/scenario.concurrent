@@ -1,3 +1,5 @@
+# Example of two consents concurrently authorizing the same collection
+
 grant Location datasubject1 Advertiser :consent1
 collect Location datasubject1 Advertiser
 step

@@ -1,3 +1,5 @@
+# Example of an overlapping authorization
+
 new data RealTimeLocation
 new data DrivingRoute RealTimeLocation
 new data WalkingRoute RealTimeLocation
