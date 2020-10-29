@@ -26,21 +26,21 @@ Scenarios are written using a simple event language. Each event description cons
 
 The following variables may appear in the language:
 
-* <DATA> is any sub-concept of the Data concept, or the Data concept, which is the class of data that can be collected or accessed.
+* \<DATA\> is any sub-concept of the Data concept, or the Data concept, which is the class of data that can be collected or accessed.
 
-* <DATASUBJECT> is an individual in the DataSubject concept, which is person about whom data is collected and accessed.
+* \<DATASUBJECT\> is an individual in the DataSubject concept, which is person about whom data is collected and accessed.
 
-* <RECIPIENT> is any sub-concpt of the Recipient concept, or the Recipient concept, representing by whom data is collected.
+* \<RECIPIENT\> is any sub-concpt of the Recipient concept, or the Recipient concept, representing by whom data is collected.
 
-* <CONSENT> is an individual in the Consent concept, which is used to grant and revoke consent.
+* \<CONSENT\> is an individual in the Consent concept, which is used to grant and revoke consent.
 
-* <COLLECT-START> is a sub-concept of the Time concept, which denotes the start of a time interval. If ommitted, it will be the current time step.
+* \<COLLECT-START\> is a sub-concept of the Time concept, which denotes the start of a time interval. If ommitted, it will be the current time step.
 
-* <COLLECT-STOP> is a sub-concept of the Time concept, which denotes the end of a time interval. If ommitted, it will be one time step beyond the collection start by default.
+* \<COLLECT-STOP\> is a sub-concept of the Time concept, which denotes the end of a time interval. If ommitted, it will be one time step beyond the collection start by default.
 
-* <ACCESS-START> is a sub-concept of the Time concept, which denotes the start of a time interval. If ommitted, it will be the current time step.
+* \<ACCESS-START\> is a sub-concept of the Time concept, which denotes the start of a time interval. If ommitted, it will be the current time step.
 
-* <ACCESS-STOP> is a sub-concept of the Time concept, which denotes the end of a time interval. If ommitted, it will be one time step beyond the access start by default.
+* \<ACCESS-STOP\> is a sub-concept of the Time concept, which denotes the end of a time interval. If ommitted, it will be one time step beyond the access start by default.
 
 ### Extending the Initial Ontology
 
@@ -48,22 +48,22 @@ The following simulator commands can be used to extend the initial ontology.
 
 The new data command is used to create a new Data subclass. The first class name is the subclass to the second class name. If the second class name is omitted, then it is assumed to be the Data class.
 
-* new data <DATA> <DATA>
+* new data \<DATA\> \<DATA\>
 * Ex. new data DemographicData Data
 
 The new recipient command is used to create a new Recipient subclass.
 
-* new recipient <RECIPIENT>
+* new recipient \<RECIPIENT\>
 * Ex. new recipient Advertiser
   
 The new disjoint command is used to declare when two or more classes as disjoint. The command can be applied to any Data subclasses, or any Recipient subclasses.
 
-* new disjoint <DATA> <DATA> ...
+* new disjoint \<DATA\> \<DATA\> ...
 * Ex. new disjoin Age Location EmailAddress
   
 The new equiv command is used to declare when two or more classes are equivalent.
 
-* new equiv <DATA> <DATA>
+* new equiv \<DATA\> \<DATA\>
 * Ex. new equiv Location CellularLocation
 
 ### Event Descriptions
@@ -72,29 +72,29 @@ The following event descriptions can be expressed in the language:
 
 The grant command is used to grant consent by a data subject for a recipient to collect and access data. If the retro argument is supplied, this consent will be retroactive.
 
-* grant [retro] <DATA> <DATASUBJECT> <RECIPIENT> :<CONSENT>
+* grant [retro] \<DATA\> \<DATASUBJECT\> \<RECIPIENT\> :\<CONSENT\>
 * Ex. grant Location datasubject1 Advertiser :consent1
 
 The withdraw command is used to withdraw a previously granted consent.
 
-* withdraw [retro] :<CONSENT>
+* withdraw [retro] :\<CONSENT\>
 * Ex. withdraw retro :consent1
 
 The collect command is used to express a collection event at the current time step on a given class of data for a data subject by the given recipient.
 
-* collect <DATA> <DATASUBJECT> <RECIPIENT>
+* collect \<DATA\> \<DATASUBJECT\> \<RECIPIENT\>
 * Ex. collect PreciseLocation datasubject1 Advertiser
 
 The access command is used to express an access event at the current time step on a given class of data for a data subject by the given recipient. If the collection start and stop times are provided, then the access will reference data collected in that interval. Otherwise, the current time step is assumed.
 
-* access <DATA> <DATASUBJECT> <RECIPIENT> [<COLLECT-START> [<COLLECT-STOP>]]
+* access \<DATA\> \<DATASUBJECT\> \<RECIPIENT\> [\<COLLECT-START\> [\<COLLECT-STOP\>]]
 * Ex. access PreciseLocation datasubject1 Advertiser T2
 
 The assume command is used to test whether a collection or access event is authorized by a given consent. The first argument indicates whether the scenario author believes this event should be authorized (true) or unauthorized (false). The remainder of the arguments correspond to a collection and access event description. In addition, however, the author can write time intervals to test events in the past.
 
-* assume true|false collect <DATA> <DATASUBJECT> <RECIPIENT> [<COLLECT-START> [<COLLCT-STOP>]]
+* assume true|false collect \<DATA\> \<DATASUBJECT\> \<RECIPIENT\> [\<COLLECT-START\> [\<COLLECT-STOP\>]]
 
-* assume true|false access <DATA> <DATASUBJECT> <RECIPIENT> [<COLLECT-START> [<COLLCT-STOP> [<ACCESS-START> [<ACCESS-STOP>]]]]]
+* assume true|false access \<DATA\> \<DATASUBJECT\> \<RECIPIENT\> [\<COLLECT-START\> [\<COLLECT-STOP\> [\<ACCESS-START\> [\<ACCESS-STOP\>]]]]]
 
 ### Simulation Parameters
 
