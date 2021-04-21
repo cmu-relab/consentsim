@@ -88,9 +88,9 @@ def simulate(script, model, logging=True):
                 # check for optional time constraints
                 collect_at = [None, None]
                 if len(args) > 3:
-                    collect_at[0] = model.getTime(args[4])
+                    collect_at[0] = model.getTime(args[3])
                 if len(args) > 4:
-                    collect_at[1] = model.getTime(args[5])
+                    collect_at[1] = model.getTime(args[4])
                 model.access(data, data_subject, recipient, collect_at)
 
             elif command[0] == 'assume':
