@@ -333,7 +333,7 @@ def generate(logging=True):
         step += 1
         script.step()
 
-    script.save("generated")
+    script.save("scenario.generated")
 
 
 
