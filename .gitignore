@@ -5,3 +5,5 @@ __pycache__
 prototypes
 
 simulation.log
+
+*.log
