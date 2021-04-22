@@ -273,17 +273,16 @@ def generate(logging=True):
         # grant
         if policy_creation_frequency >= random.random():
             # Policy
-            policy = Policy(
-                retro = random.random() >= 0.5,
-                data = Data.get_one_randomly().diversify(), # script.new_data(data, parent)
-                recipient = Recipient(
-                    reputation = random.random()
-                )
+            retro = random.random() >= 0.5
+            data = Data.get_one_randomly().diversify() # script.new_data(data, parent)
+            recipient = Recipient(
+                reputation = random.random()
             )
             # grant
             for ds in DataSubject.all:
-                if ds.granting_willingness(policy.recipient.reputation) > random.random():
-                    consent = Consent(policy.retro, policy.data, ds, policy.recipient)
+                # granting_willingness: 1-awareness + awareness * reputation
+                if ds.granting_willingness(recipient.reputation) > random.random():
+                    consent = Consent(retro, data, ds, recipient)
 
         # withdraw
         for c in Consent.all:
