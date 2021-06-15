@@ -1,7 +1,11 @@
 #!env/bin/python3
 
-import sys, argparse, traceback
+import sys, argparse, traceback, os
 from consent_model import ConsentModel
+import time
+
+def current_milli_time():
+    return round(time.time() * 1000)
 
 def simulate(script, model, logging=True):
     # redirect standard error to the simulation log
@@ -12,6 +16,11 @@ def simulate(script, model, logging=True):
 
     # setup table to lookup consent reference names
     consent_history = {}
+
+    # start timer
+    time = "init.T1"
+    last_milli_time = current_milli_time()
+    timer_log = open(script+'.timer.log', 'w')
 
     # read and process lines in script
     lines = open(script, 'r').readlines()
@@ -29,8 +38,14 @@ def simulate(script, model, logging=True):
 
         try:        
             if command[0] == 'step':
+                # get and write step time
+                timer_log.write( str(current_milli_time()-last_milli_time) + "\n")
+                timer_log.flush()
+                os.fsync(timer_log.fileno())
+                last_milli_time = current_milli_time()
                 # advance one time step
                 time = model.step()
+                print('step into T'+str(model.this_time))
 
             elif command[0] == 'set':
                 # toggle states in the model or simulator
@@ -148,6 +163,11 @@ def simulate(script, model, logging=True):
                     model.createDisjoint(args)
                 elif command[0] == 'eqiv':
                     model.createEquivalent(args)
+            
+            # sync reasoner
+            elif command[0] == 'sync':
+                model.sync()
+
             else:
                 print('Unrecognized command: %s' % line)
 
@@ -162,6 +182,10 @@ def simulate(script, model, logging=True):
     if logging:
         log.close()
         sys.stderr = stderr
+
+    # close timer
+    timer_log.close()
+
     return
             
 def main(argv):

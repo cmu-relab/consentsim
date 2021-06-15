@@ -140,6 +140,9 @@ class ConsentModel:
             disjoint.append(cls)
         AllDisjoint(disjoint)
 
+    def sync(self):
+        sync_reasoner()
+
     def step(self):
         self.this_time += 1
         current_time = self.currentTime()
