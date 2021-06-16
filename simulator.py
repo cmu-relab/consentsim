@@ -20,7 +20,7 @@ def simulate(script, model, logging=True):
     # start timer
     time = "init.T1"
     last_milli_time = current_milli_time()
-    timer_log = open(script+'.timer.log', 'w')
+    timer_log = open(script+'.timelog', 'w')
 
     # read and process lines in script
     lines = open(script, 'r').readlines()

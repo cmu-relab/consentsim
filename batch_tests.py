@@ -1,20 +1,30 @@
 #!env/bin/python3
 
-import time
-from script_generator import *
+import os
 
-
-def main(argv):
+def generate(fn_name):
     
-    for i in range(10):
+        os.system("python script_generator.py " + fn_name + " " + str(500) )
+
+def main():
+    
+    for i in range(5):
         
+        # re start
         generate("steps")
-        generate("nested_data")
+        generate("data")
+        generate("data_and_recipient")
+    
+    for i in range(5):
 
         generate("access")
-        generate("nested_data_and_access")
+        generate("data_and_access")
 
         generate("collect")
-        generate("nested_data_and_collect")
+        generate("data_and_collect")
 
         generate("realistic")
+
+
+if __name__ == "__main__":
+    main()

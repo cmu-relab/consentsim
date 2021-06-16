@@ -103,6 +103,23 @@ def nested_data(steps_tot):
     # script.save("scripts\scenario.generated.nested_data")
     return script
 
+def data_and_recipient(steps_tot):
+
+    script = Script()
+
+    step = 1
+    while step < steps_tot:
+
+        script.new_data("Data"+str(step), ("Data"+str(step-1) if step>1 else "Data") )
+        script.new_recipient("r"+str(step))
+        
+        # step
+        step += 1
+        script.step()
+
+    # script.save("scripts\scenario.generated.nested_data")
+    return script
+
 
 def access(steps_tot):
 
@@ -131,16 +148,17 @@ def access(steps_tot):
 
     return script
 
-def nested_data_and_access(steps_tot):
+def data_and_access(steps_tot):
 
     script = Script()
     
-    script.grant(retro="true",data="Data",data_subject="ds1",recipient="r1",consent="c0")
+    script.new_data("Data0")
+    script.grant(retro="true",data="Data0",data_subject="ds1",recipient="r1",consent="c0")
 
     step = 1
     while step < steps_tot:
 
-        script.new_data("Data"+str(step), ("Data"+str(step-1) if step>1 else "Data") )
+        script.new_data("Data"+str(step), "Data"+str(step-1) )
         
         if step>2:
             script.assume(
@@ -170,7 +188,7 @@ def collect(steps_tot):
     step = 1
     while step < steps_tot:
 
-        script.assume(expected="false", action="collect", data="Data0", data_subject="ds1", recipient="r1")
+        script.assume(expected="true", action="collect", data="Data0", data_subject="ds1", recipient="r1")
         
         # step
         step += 1
@@ -179,7 +197,7 @@ def collect(steps_tot):
     # script.save("scripts\scenario.generated.nested_data_collect")
     return script
 
-def nested_data_and_collect(steps_tot):
+def data_and_collect(steps_tot):
 
     script = Script()
 
@@ -325,8 +343,8 @@ def realistic(steps_tot):
             script.new_data("Data"+str(step), latest_data)
             latest_data = "Data"+str(step)
             # new recipient
-            # script.new_recipient("r"+str(step))
-            # latest_recipient = "r"+str(step)
+            script.new_recipient("r"+str(step))
+            latest_recipient = "r"+str(step)
         
         # Every 90 days policy is consented
         if step%90==0:
@@ -354,10 +372,10 @@ def realistic(steps_tot):
 
 def generate(generator_fn_name, steps_tot=500):
     
-    file_name = "scripts\\"+str(round(time.time()))+".gen."+generator_fn_name
+    file_name = "scripts\\gen."+generator_fn_name+str(round(time.time()))
     
     # generate the script
-    script = globals()[generator_fn_name]()
+    script = globals()[generator_fn_name](steps_tot)
     script.save(file_name)
     print("Done script generation of: "+file_name)
     
